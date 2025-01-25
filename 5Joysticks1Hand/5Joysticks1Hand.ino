@@ -1,11 +1,15 @@
-#include <Arduino.h>
-//#include <BleKeyboard.h> 
-//#include <Wire.h>
+//#include <Arduino.h>
+//#include <BleGamepad.h>
 
-#include <BleGamepad.h>
+#include <BleConnectionStatus.h>
+#include <BleCompositeHID.h>
+#include <XboxGamepadDevice.h>
 
-BleGamepad bleGamepad;
-BleGamepadConfiguration bleGamepadConfig;  
+//BleGamepad bleGamepad;
+//BleGamepadConfiguration bleGamepadConfig;  
+
+XboxGamepadDevice *gamepad;
+BleCompositeHID compositeHID("ESP32 SeriesX Controller", "Mystfit", 100);
 
 //BleKeyboard Keyboard("FiveInOne", "Bluetooth Device Manufacturer", 100);
 
@@ -54,15 +58,48 @@ int threshold = 100;//range / 6;  // resting threshold
 int centerCalibration = 1700;
 
 void setup() {
-  //Serial.begin(115200);
+  Serial.begin(115200);
   Serial.println("Starting BLE work!");
   //Keyboard.begin();
-  bleGamepadConfig.setControllerType(CONTROLLER_TYPE_JOYSTICK); // CONTROLLER_TYPE_JOYSTICK, CONTROLLER_TYPE_GAMEPAD (DEFAULT), CONTROLLER_TYPE_MULTI_AXIS
-  bleGamepad.begin(&bleGamepadConfig);
+  //bleGamepadConfig.setControllerType(CONTROLLER_TYPE_JOYSTICK); // CONTROLLER_TYPE_JOYSTICK, CONTROLLER_TYPE_GAMEPAD (DEFAULT), CONTROLLER_TYPE_MULTI_AXIS
+  //bleGamepad.begin(&bleGamepadConfig);
+
+
+  XboxSeriesXControllerDeviceConfiguration* config = new XboxSeriesXControllerDeviceConfiguration();
+
+  // The composite HID device pretends to be a valid Xbox controller via vendor and product IDs (VID/PID).
+  // Platforms like windows/linux need this in order to pick an XInput driver over the generic BLE GATT HID driver. 
+  BLEHostConfiguration hostConfig = config->getIdealHostConfiguration();
+  Serial.println("Using VID source: " + String(hostConfig.getVidSource(), HEX));
+  Serial.println("Using VID: " + String(hostConfig.getVid(), HEX));
+  Serial.println("Using PID: " + String(hostConfig.getPid(), HEX));
+  Serial.println("Using GUID version: " + String(hostConfig.getGuidVersion(), HEX));
+  Serial.println("Using serial number: " + String(hostConfig.getSerialNumber()));
+    
+  // Set up gamepad
+  gamepad = new XboxGamepadDevice(config);
+
+  FunctionSlot<XboxGamepadOutputReportData> vibrationSlot(OnVibrateEvent);
+  gamepad->onVibrate.attach(vibrationSlot);
+  compositeHID.addDevice(gamepad);
+  Serial.println("Starting composite HID device...");
+  compositeHID.begin(hostConfig);
+
 
   delay(300);
-    
   centerCalibration = analogRead(xJoystick1);
+  gamepad->setRightThumb(0, 0);
+  gamepad->sendGamepadReport();
+}
+
+void OnVibrateEvent(XboxGamepadOutputReportData data)
+{
+    if(data.weakMotorMagnitude > 0 || data.strongMotorMagnitude > 0){
+        //digitalWrite(ledPin, LOW);
+    } else {
+        //digitalWrite(ledPin, HIGH);
+    }
+    Serial.println("Vibration event. Weak motor: " + String(data.weakMotorMagnitude) + " Strong motor: " + String(data.strongMotorMagnitude));
 }
 
 int readAxis(int thisAxis, boolean inverse) {
@@ -88,13 +125,18 @@ int readAxis(int thisAxis, boolean inverse) {
   if(output>= 4095){
     output = 4095;
   }
+
+  if(output <= 0){
+    output = 0;
+  }
+
   
 
   Serial.print(" , output: ");
   Serial.print(output);
 
 
-  reading = map(output, 0, 4096, 0, range);
+  reading = map(output, 0, 4096, -range, range);
   Serial.print(", convert: ");
   Serial.print(reading);
   Serial.print(" , ");
@@ -115,12 +157,31 @@ void joystickDirection(int xJoyPin, int yJoyPin){
   Serial.print(xReading);
   Serial.print(", y: ");
   Serial.println(yReading);
+  if(compositeHID.isConnected()){
+    Serial.print(", connected ");
+    gamepad->setLeftThumb (xReading, yReading);
+    gamepad->setRightThumb(1, 1);
+    gamepad->sendGamepadReport();
+  }
+  
+  delay(20);
+}
+
+/*void joystickDirection(int xJoyPin, int yJoyPin){
+
+  int xReading = readAxis(xJoyPin, true);
+  int yReading = readAxis(yJoyPin, false);
+  //int yReading = 0;
+  Serial.print("x: ");
+  Serial.print(xReading);
+  Serial.print(", y: ");
+  Serial.println(yReading);
   if (bleGamepad.isConnected())
   {
     bleGamepad.setLeftThumb(xReading, yReading);
   }
   
-}
+}*/
 
 
 /*void joystickToKeyboardDirection(int xJoyPin, int yJoyPin, int leftKey, int rightKey, int upKey, int downKey, bool &leftPressed, bool &rightPressed, bool &upPressed, bool &downPressed){

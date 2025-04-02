@@ -1,0 +1,1 @@
+5-way Hat/POV Switch housing for Five Way Switch 10x10x10mm Multi Direction Switch Touch Reset Button by MagniBY on Thingiverse: https://www.thingiverse.com/thing:4934310

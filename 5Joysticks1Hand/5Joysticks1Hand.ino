@@ -7,35 +7,35 @@
 
 //BleGamepad bleGamepad;
 //BleGamepadConfiguration bleGamepadConfig;  
-
+  
 XboxGamepadDevice *gamepad;
 //
-
+/*
 BleCompositeHID compositeHID("Multi Left2", "Jota", 100);
 bool xInvertJoyLD = false;
-bool yInvertJoyLD = false;
-bool xInvertJoyRD = false;
-bool yInvertJoyRD = false;
-
-bool xInvertJoyLU = true;
-bool yInvertJoyLU = true;
-bool xInvertJoyRU = true;
-bool yInvertJoyRU = true;
-
-
-/*
-BleCompositeHID compositeHID("Multi Der2", "Jota", 100);
-
-bool xInvertJoyLD = true;
 bool yInvertJoyLD = false;
 bool xInvertJoyRD = true;
 bool yInvertJoyRD = false;
 
-bool xInvertJoyLU = false;
-bool yInvertJoyLU = false;
+bool xInvertJoyLU = true;
+bool yInvertJoyLU = true;
 bool xInvertJoyRU = false;
 bool yInvertJoyRU = false;
 */
+
+
+BleCompositeHID compositeHID("Multi C2", "Jota", 100);
+
+bool xInvertJoyLD = false;
+bool yInvertJoyLD = false;
+bool xInvertJoyRD = true;
+bool yInvertJoyRD = false;
+
+bool xInvertJoyLU = true;
+bool yInvertJoyLU = true;
+bool xInvertJoyRU = false;
+bool yInvertJoyRU = false;
+
 
 //BleCompositeHID compositeHID("Multi Test", "Jota", 100);
 
@@ -51,43 +51,32 @@ const int TRIGER_LEFT  = 141;
 const int TRIGER_RIGHT = 142;
 
 //JOYSTICK VARIABLES
-const int xJoystick1 = 32;
-const int yJoystick1 = 33;
-bool leftJoystickPressed1 = false;
-bool rigthJoystickPressed1 = false;
-bool upJoystickPressed1 = false;
-bool downJoystickPressed1 = false;
 
-const int xJoystick2 = 26;
-const int yJoystick2 = 27;
-bool leftJoystickPressed2 = false;
-bool rigthJoystickPressed2 = false;
-bool upJoystickPressed2 = false;
-bool downJoystickPressed2 = false;
+//LEFT
+const int xJoystickLeftDownPin = 12;
+const int yJoystickLeftDownPin = 13;
+const int xJoystickLeftUpPin = 27;
+const int yJoystickLeftUpPin = 14;
+const int triggerButtons2 = 15;
 
-const int xJoystickLEFTUP = 39;
-const int yJoystickLEFTUP = 34;
-const int triggerLEFTUP = 25;
-bool leftJoystickPressedLEFTUP = false;
-bool rigthJoystickPressedLEFTUP = false;
-bool upJoystickPressedLEFTUP = false;
-bool downJoystickPressedLEFTUP = false;
-
-const int xJoystickRIGTHUP = 12;
-const int yJoystickRIGTHUP = 13;
-const int triggerRIGTHUP = 14;
-bool leftJoystickPressedRIGTHUP = false;
-bool rigthJoystickPressedRIGTHUP = false;
-bool upJoystickPressedRIGTHUP = false;
-bool downJoystickPressedRIGTHUP = false;
-
+//RIGTH
+const int xJoystickRigthDownPin = 34;
+const int yJoystickRigthDownPin = 35;
+const int xJoystickRigthUpPin = 36;
+const int yJoystickRigthUpPin = 39;
+const int triggerButtons4 = 4;
 
 
 int range = 32767;  // output range of X or Y movement
 int minRange = 0;
 int maxRange = 32767;
 int threshold = 300;//TODO: check if reduce this threshold to more precicion but errors int the button detection
-int centerCalibration = 1700;
+
+int centerCalibrationLeftUp = 2000;
+int centerCalibrationLeftDown = 2000;
+int centerCalibrationRigthUp = 2000;
+int centerCalibrationRigthDown = 2000;
+
 
 
 //BUTTONS VARIABLES
@@ -143,8 +132,8 @@ void setup() {
 
 
   //Setup Switch
-  pinMode(triggerLEFTUP , INPUT_PULLDOWN);
-  pinMode(triggerRIGTHUP, INPUT_PULLDOWN);
+  pinMode(triggerButtons2 , INPUT_PULLDOWN);
+  pinMode(triggerButtons4, INPUT_PULLDOWN);
 
   pinMode(buttonRow[0], INPUT_PULLUP);
   pinMode(buttonRow[1], INPUT_PULLUP);
@@ -166,7 +155,11 @@ void setup() {
   gamepad->setLeftThumb(1, 1);
   gamepad->setRightThumb(1, 1);
   gamepad->sendGamepadReport();
-  centerCalibration = analogRead(xJoystick1);
+
+  centerCalibrationLeftUp = analogRead(xJoystickLeftUpPin);
+  centerCalibrationLeftDown = analogRead(xJoystickLeftDownPin);
+  centerCalibrationRigthUp = analogRead(xJoystickRigthUpPin);
+  centerCalibrationRigthDown = analogRead(xJoystickRigthDownPin);
   
 }
 
@@ -180,26 +173,24 @@ void OnVibrateEvent(XboxGamepadOutputReportData data)
     Serial.println("Vibration event. Weak motor: " + String(data.weakMotorMagnitude) + " Strong motor: " + String(data.strongMotorMagnitude));
 }
 
-int readAxis(int thisAxis, boolean inverse, int centerOwnCalibration) {// output: -4095 to 4095, 0 in  calibration choose default
+int readAxis(int thisAxis, boolean inverse, int centerCalibration) {// output: -4095 to 4095, 0 in  calibration choose default
 
-  int centerChooseCalibration = centerCalibration;
-  if(centerOwnCalibration>0) centerChooseCalibration = centerOwnCalibration;
   int reading = analogRead(thisAxis);
   //Serial.print("analogue: ");
   //Serial.println(reading);
-  int distance = reading - centerChooseCalibration;
+  int distance = reading - centerCalibration;
 
   if (abs(distance) < threshold) {
     distance = 0;
   }
 
-  int defaultCalibration = 4096/2 - centerChooseCalibration;
+  int defaultCalibration = 4096/2 - centerCalibration;
   //Serial.print(" , calibra: ");
   //Serial.print(defaultCalibration);
 
-  int output =  centerChooseCalibration + distance + defaultCalibration;
+  int output =  centerCalibration + distance + defaultCalibration;
   if(inverse == true){
-    output = centerChooseCalibration-distance + defaultCalibration;
+    output = centerCalibration-distance + defaultCalibration;
   }
 
   if(output>= 4095){
@@ -224,10 +215,10 @@ int readAxis(int thisAxis, boolean inverse, int centerOwnCalibration) {// output
 
 void joystickDirection(int xJoyPinLeft, int yJoyPinLeft, int xJoyPinRight, int yJoyPinRight){
 
-  int xReading = readAxis(xJoyPinLeft, xInvertJoyLD, 0);
-  int yReading = readAxis(yJoyPinLeft, yInvertJoyLD, 0);
-  int xReadingRigth = readAxis(xJoyPinRight, xInvertJoyRD,2000);
-  int yReadingRigth = readAxis(yJoyPinRight, yInvertJoyRD, 2000);
+  int xReading = readAxis(xJoyPinLeft, xInvertJoyLD, centerCalibrationLeftDown);
+  int yReading = readAxis(yJoyPinLeft, yInvertJoyLD, centerCalibrationLeftDown);
+  int xReadingRigth = readAxis(xJoyPinRight, xInvertJoyRD, centerCalibrationRigthDown);
+  int yReadingRigth = readAxis(yJoyPinRight, yInvertJoyRD, centerCalibrationRigthDown);
 
  /*
   Serial.print("xl: ");
@@ -326,12 +317,12 @@ void joysticksButtons(int xJoyPinLeft, int yJoyPinLeft, int xJoyPinRight, int yJ
 
 
 
-  int xReading = readAxis(xJoyPinLeft, xInvertJoyLU, 0);
-  int yReading = readAxis(yJoyPinLeft, yInvertJoyLU, 0);
-  int xReadingRigth = readAxis(xJoyPinRight, xInvertJoyRU, 0);
-  int yReadingRigth = readAxis(yJoyPinRight, yInvertJoyRU, 0);
- 
-  /*
+  int xReading = readAxis(xJoyPinLeft, xInvertJoyLU, centerCalibrationLeftUp);
+  int yReading = readAxis(yJoyPinLeft, yInvertJoyLU, centerCalibrationLeftUp);
+  int xReadingRigth = readAxis(xJoyPinRight, xInvertJoyRU, centerCalibrationRigthUp);
+  int yReadingRigth = readAxis(yJoyPinRight, yInvertJoyRU, centerCalibrationRigthUp);
+  
+  
   Serial.print("x LU: ");
   Serial.print(xReading);
   Serial.print(", y LU: ");
@@ -340,7 +331,7 @@ void joysticksButtons(int xJoyPinLeft, int yJoyPinLeft, int xJoyPinRight, int yJ
   Serial.print(xReadingRigth);
   Serial.print(", y RU: ");
   Serial.println(yReadingRigth);
-  */
+  
 
   joystickButtons(xReading, yReading, 0);
   joystickButtons(xReadingRigth, yReadingRigth, 1);
@@ -538,12 +529,12 @@ void loop() {
   //joystickDirection1();
   int startLoop = millis();
   //keyboardDetection();
-  joystickDirection(xJoystick1, yJoystick1, xJoystick2, yJoystick2);
-  joysticksButtons(xJoystickLEFTUP, yJoystickLEFTUP, xJoystickRIGTHUP, yJoystickRIGTHUP);
+  joystickDirection(xJoystickLeftDownPin, yJoystickLeftDownPin, xJoystickRigthDownPin, yJoystickRigthDownPin);
+  joysticksButtons(xJoystickLeftUpPin, yJoystickLeftUpPin, xJoystickRigthUpPin, yJoystickRigthUpPin);
   int delayLoop = millis() - startLoop;
 
-  int buttonLeftUp = digitalRead(triggerLEFTUP);
-  int buttonRigthUp= digitalRead(triggerRIGTHUP);
+  int buttonLeftUp = digitalRead(triggerButtons2);
+  int buttonRigthUp= digitalRead(triggerButtons4);
 
   
   if (buttonLeftUp == HIGH) {
@@ -587,11 +578,11 @@ void loop() {
   //delay(2);
 
 
-  //joystickDirection(xJoystick2, yJoystick2, 'f', 'h', 't', 'g', leftJoystickPressed2, rigthJoystickPressed2, upJoystickPressed2, downJoystickPressed2);
+  //joystickDirection(xJoystickRigthDownPin, yJoystickRigthDownPin, 'f', 'h', 't', 'g', leftJoystickPressed4, rigthJoystickPressed4, riupJoystickPressed4, downJoystickPressed2);
   //delay(5);
   //joystickDirection(xJoystick3, yJoystick3, 'j', 'l', 'i', 'k', leftJoystickPressed3, rigthJoystickPressed3, upJoystickPressed3, downJoystickPressed3);
   //delay(20);
-  //joystickDirection(xJoystick4, yJoystick4, KEY_LEFT_ARROW, KEY_RIGHT_ARROW, KEY_UP_ARROW, KEY_DOWN_ARROW, leftJoystickPressed4, rigthJoystickPressed4, upJoystickPressed4, downJoystickPressed4);
+  //joystickDirection(xJoystickRigthDownPin, yJoystickRigthDownPin, KEY_LEFT_ARROW, KEY_RIGHT_ARROW, KEY_UP_ARROW, KEY_DOWN_ARROW, leftJoystickPressed4, rigthJoystickPressed4, upJoystickPressed4, downJoystickPressed4);
   //delay(20);
 
 }

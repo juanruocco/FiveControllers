@@ -9,9 +9,35 @@
 //BleGamepadConfiguration bleGamepadConfig;  
 
 XboxGamepadDevice *gamepad;
-//BleCompositeHID compositeHID("Multi Left", "Jota", 100);
-//BleCompositeHID compositeHID("Multi Der", "Jota", 100);
-BleCompositeHID compositeHID("Multi Test", "Jota", 100);
+//
+
+BleCompositeHID compositeHID("Multi Left2", "Jota", 100);
+bool xInvertJoyLD = false;
+bool yInvertJoyLD = false;
+bool xInvertJoyRD = false;
+bool yInvertJoyRD = false;
+
+bool xInvertJoyLU = true;
+bool yInvertJoyLU = true;
+bool xInvertJoyRU = true;
+bool yInvertJoyRU = true;
+
+
+/*
+BleCompositeHID compositeHID("Multi Der2", "Jota", 100);
+
+bool xInvertJoyLD = true;
+bool yInvertJoyLD = false;
+bool xInvertJoyRD = true;
+bool yInvertJoyRD = false;
+
+bool xInvertJoyLU = false;
+bool yInvertJoyLU = false;
+bool xInvertJoyRU = false;
+bool yInvertJoyRU = false;
+*/
+
+//BleCompositeHID compositeHID("Multi Test", "Jota", 100);
 
 //BleKeyboard Keyboard("FiveInOne", "Bluetooth Device Manufacturer", 100);
 
@@ -25,47 +51,42 @@ const int TRIGER_LEFT  = 141;
 const int TRIGER_RIGHT = 142;
 
 //JOYSTICK VARIABLES
-const int xJoystick1 = 25;
-const int yJoystick1 = 26;
+const int xJoystick1 = 32;
+const int yJoystick1 = 33;
 bool leftJoystickPressed1 = false;
 bool rigthJoystickPressed1 = false;
 bool upJoystickPressed1 = false;
 bool downJoystickPressed1 = false;
 
-const int xJoystick2 = 27;
-const int yJoystick2 = 14;
+const int xJoystick2 = 26;
+const int yJoystick2 = 27;
 bool leftJoystickPressed2 = false;
 bool rigthJoystickPressed2 = false;
 bool upJoystickPressed2 = false;
 bool downJoystickPressed2 = false;
 
-/*
-const int xJoystick3 = 25;
-const int yJoystick3 = 26;
-bool leftJoystickPressed3 = false;
-bool rigthJoystickPressed3 = false;
-bool upJoystickPressed3 = false;
-bool downJoystickPressed3 = false;
+const int xJoystickLEFTUP = 39;
+const int yJoystickLEFTUP = 34;
+const int triggerLEFTUP = 25;
+bool leftJoystickPressedLEFTUP = false;
+bool rigthJoystickPressedLEFTUP = false;
+bool upJoystickPressedLEFTUP = false;
+bool downJoystickPressedLEFTUP = false;
 
-const int xJoystick4 = 27;
-const int yJoystick4 = 14;
-bool leftJoystickPressed4 = false;
-bool rigthJoystickPressed4 = false;
-bool upJoystickPressed4 = false;
-bool downJoystickPressed4 = false;
+const int xJoystickRIGTHUP = 12;
+const int yJoystickRIGTHUP = 13;
+const int triggerRIGTHUP = 14;
+bool leftJoystickPressedRIGTHUP = false;
+bool rigthJoystickPressedRIGTHUP = false;
+bool upJoystickPressedRIGTHUP = false;
+bool downJoystickPressedRIGTHUP = false;
 
-const int xJoystick5 = 12;
-const int yJoystick5 = 13;
-bool leftJoystickPressed5 = false;
-bool rigthJoystickPressed5 = false;
-bool upJoystickPressed5 = false;
-bool downJoystickPressed5 = false;
-*/
+
 
 int range = 32767;  // output range of X or Y movement
 int minRange = 0;
 int maxRange = 32767;
-int threshold = 100;//range / 6;  // resting threshold
+int threshold = 300;//TODO: check if reduce this threshold to more precicion but errors int the button detection
 int centerCalibration = 1700;
 
 
@@ -82,6 +103,12 @@ uint16_t gamepadButtons[5][4] =   {
                                     { WEST_DIRE       , 1                       , XBOX_BUTTON_X               , XBOX_BUTTON_START       },    
                                     { TRIGER_LEFT     , XBOX_BUTTON_HOME        , TRIGER_RIGHT                , 1                       }                             
                                   };
+
+boolean gamepadButtonsJoystickPressed[2][9] = { false };                                  
+uint16_t gamepadButtonsJoystick[2][9] =   { 
+                                              { NORTH_DIRE      ,XBOX_BUTTON_SELECT   ,EAST_DIRE        ,XBOX_BUTTON_LS   ,SOUTH_DIRE     ,XBOX_BUTTON_LB   ,WEST_DIRE       ,TRIGER_LEFT          , XBOX_BUTTON_HOME  },                                 
+                                              { XBOX_BUTTON_Y   ,TRIGER_RIGHT         ,XBOX_BUTTON_B    ,XBOX_BUTTON_RB  , XBOX_BUTTON_A  ,XBOX_BUTTON_RS   ,XBOX_BUTTON_X   ,XBOX_BUTTON_START    ,XBOX_BUTTON_SHARE }     
+                                          };
 
 void setup() {
   Serial.begin(115200);
@@ -103,6 +130,7 @@ void setup() {
   Serial.println("Using serial number: " + String(hostConfig.getSerialNumber()));
     
   // Set up gamepad
+  //gamepad = new XboxGamepadDevice(config);
   gamepad = new XboxGamepadDevice(config);
 
   FunctionSlot<XboxGamepadOutputReportData> vibrationSlot(OnVibrateEvent);
@@ -115,6 +143,9 @@ void setup() {
 
 
   //Setup Switch
+  pinMode(triggerLEFTUP , INPUT_PULLDOWN);
+  pinMode(triggerRIGTHUP, INPUT_PULLDOWN);
+
   pinMode(buttonRow[0], INPUT_PULLUP);
   pinMode(buttonRow[1], INPUT_PULLUP);
   pinMode(buttonRow[2], INPUT_PULLUP);
@@ -149,24 +180,26 @@ void OnVibrateEvent(XboxGamepadOutputReportData data)
     Serial.println("Vibration event. Weak motor: " + String(data.weakMotorMagnitude) + " Strong motor: " + String(data.strongMotorMagnitude));
 }
 
-int readAxis(int thisAxis, boolean inverse) {
+int readAxis(int thisAxis, boolean inverse, int centerOwnCalibration) {// output: -4095 to 4095, 0 in  calibration choose default
 
+  int centerChooseCalibration = centerCalibration;
+  if(centerOwnCalibration>0) centerChooseCalibration = centerOwnCalibration;
   int reading = analogRead(thisAxis);
   //Serial.print("analogue: ");
-  //Serial.print(reading);
-  int distance = reading - centerCalibration;
+  //Serial.println(reading);
+  int distance = reading - centerChooseCalibration;
 
   if (abs(distance) < threshold) {
     distance = 0;
   }
 
-  int defaultCalibration = 4096/2 - centerCalibration;
+  int defaultCalibration = 4096/2 - centerChooseCalibration;
   //Serial.print(" , calibra: ");
   //Serial.print(defaultCalibration);
 
-  int output =  centerCalibration + distance + defaultCalibration;
+  int output =  centerChooseCalibration + distance + defaultCalibration;
   if(inverse == true){
-    output = centerCalibration-distance + defaultCalibration;
+    output = centerChooseCalibration-distance + defaultCalibration;
   }
 
   if(output>= 4095){
@@ -191,11 +224,12 @@ int readAxis(int thisAxis, boolean inverse) {
 
 void joystickDirection(int xJoyPinLeft, int yJoyPinLeft, int xJoyPinRight, int yJoyPinRight){
 
-  int xReading = readAxis(xJoyPinLeft, true);
-  int yReading = readAxis(yJoyPinLeft, false);
-  int xReadingRigth = readAxis(xJoyPinRight, true);
-  int yReadingRigth = readAxis(yJoyPinRight, false);
- /* 
+  int xReading = readAxis(xJoyPinLeft, xInvertJoyLD, 0);
+  int yReading = readAxis(yJoyPinLeft, yInvertJoyLD, 0);
+  int xReadingRigth = readAxis(xJoyPinRight, xInvertJoyRD,2000);
+  int yReadingRigth = readAxis(yJoyPinRight, yInvertJoyRD, 2000);
+
+ /*
   Serial.print("xl: ");
   Serial.print(xReading);
   Serial.print(", yl: ");
@@ -204,7 +238,8 @@ void joystickDirection(int xJoyPinLeft, int yJoyPinLeft, int xJoyPinRight, int y
   Serial.print(xReadingRigth);
   Serial.print(", yr: ");
   Serial.println(yReadingRigth);
-*/
+  */
+
   if(compositeHID.isConnected()){
     //Serial.print(", connected ");
     gamepad->setLeftThumb (xReading, yReading);
@@ -212,20 +247,159 @@ void joystickDirection(int xJoyPinLeft, int yJoyPinLeft, int xJoyPinRight, int y
     gamepad->sendGamepadReport();
   }
   
-  delay(10);
+  delay(1);
 }
 
+void joystickButtons(int xReading, int yReading, int row){
+  //TODO: improve: cancel other buttons when one button is pressed
+        
+  int thresholdMax = 28000; //31327, 32767
+  int thresholdMedium = 15000; //31327, 32767
+  int thresholdMin = 1000; 
+  if(compositeHID.isConnected()){
+    
+    // X = 0
+    if(xReading < thresholdMin && xReading > -thresholdMin){
+        if(yReading < thresholdMin && yReading > -thresholdMin){
+            unpressJoystickButtonsRow(row);
+        }
+
+        //Up Button
+        if(yReading > thresholdMax){
+            //unpressJoystickButtonsRow(row);
+            pressButtonsJoystickManager(row,0);
+        }
+      
+        //Down Button
+        if(yReading < -thresholdMax){
+            //unpressJoystickButtonsRow(row);
+            pressButtonsJoystickManager(row,4);
+        }
+
+    }
+
+    //X Rigth Button
+    if(xReading > thresholdMax && yReading < thresholdMin && yReading > -thresholdMin ){
+        //unpressJoystickButtonsRow(row);
+        pressButtonsJoystickManager(row, 2);
+    }
+
+    // X > 0
+    if(xReading > thresholdMedium ){
+
+        if(yReading > thresholdMedium){
+            //unpressJoystickButtonsRow(row);
+            pressButtonsJoystickManager(row, 1);
+        }
+
+        if(yReading < -thresholdMedium){
+            //unpressJoystickButtonsRow(row);
+            pressButtonsJoystickManager(row, 3);
+        }
+    }
+
+    //X Left Button
+    if(xReading < -thresholdMax && yReading < thresholdMin && yReading > -thresholdMin){
+        //unpressJoystickButtonsRow(row);
+        pressButtonsJoystickManager(row, 6);
+    }
+
+    // X < 0
+    if(xReading < -thresholdMedium ){
+
+        if(yReading < -thresholdMedium){
+            //unpressJoystickButtonsRow(row);
+            pressButtonsJoystickManager(row, 5);
+        }
+        
+        if(yReading > thresholdMedium){
+            //unpressJoystickButtonsRow(row);
+            pressButtonsJoystickManager(row, 7);
+        }        
+    }
+    //gamepad->sendGamepadReport();
+  }
+}
+
+void joysticksButtons(int xJoyPinLeft, int yJoyPinLeft, int xJoyPinRight, int yJoyPinRight){
+
+
+
+
+  int xReading = readAxis(xJoyPinLeft, xInvertJoyLU, 0);
+  int yReading = readAxis(yJoyPinLeft, yInvertJoyLU, 0);
+  int xReadingRigth = readAxis(xJoyPinRight, xInvertJoyRU, 0);
+  int yReadingRigth = readAxis(yJoyPinRight, yInvertJoyRU, 0);
+ 
+  /*
+  Serial.print("x LU: ");
+  Serial.print(xReading);
+  Serial.print(", y LU: ");
+  Serial.print(yReading);
+  Serial.print(", x RU: ");
+  Serial.print(xReadingRigth);
+  Serial.print(", y RU: ");
+  Serial.println(yReadingRigth);
+  */
+
+  joystickButtons(xReading, yReading, 0);
+  joystickButtons(xReadingRigth, yReadingRigth, 1);
+
+//> <
+  
+  
+  delay(1);
+}
+
+//PRESS GAMEPAD JOYSTICK BUTTONS
+void pressButtonsJoystickManager(int row, int col){
+  if (gamepadButtonsJoystickPressed[row][col] == false){
+    pressButtonsJoystick(row, col);
+    gamepadButtonsJoystickPressed[row][col] = true;
+  }
+}
+
+
+
+void pressButtonsJoystick(int row, int col){
+  
+  Serial.print("PRESS  : ");
+  Serial.print(gamepadButtonsJoystick[row][col]);
+  Serial.print(", Row: ");
+  Serial.print(row);
+  Serial.print(" ,Col: ");
+  Serial.println(col);
+
+  if( gamepadButtonsJoystick[row][col] == NORTH_DIRE ){
+    gamepad->pressDPadDirectionFlag(XboxDpadFlags::NORTH);
+  }else if(gamepadButtonsJoystick[row][col] == SOUTH_DIRE){
+    gamepad->pressDPadDirectionFlag(XboxDpadFlags::SOUTH);
+  }else if(gamepadButtonsJoystick[row][col] == WEST_DIRE){
+    gamepad->pressDPadDirectionFlag(XboxDpadFlags::WEST);
+  }else if(gamepadButtonsJoystick[row][col] == EAST_DIRE){
+    gamepad->pressDPadDirectionFlag(XboxDpadFlags::EAST);
+  }else if(gamepadButtonsJoystick[row][col] == TRIGER_LEFT){
+    gamepad-> setLeftTrigger(30000);
+  }else if(gamepadButtonsJoystick[row][col] == TRIGER_RIGHT){
+    gamepad-> setRightTrigger(30000);
+  }else{
+    gamepad->press(gamepadButtonsJoystick[row][col]);
+  }
+  
+  gamepad->sendGamepadReport();
+
+}  
 
 //PRESS GAMEPAD BUTTONS
 void pressButtons(int row, int col){
   
-  Serial.print("PRESS  : ");
+  Serial.print("PRESS df  : ");
   Serial.print(gamepadButtons[row][col]);
   Serial.print(", Row: ");
   Serial.print(row);
   Serial.print(" ,Col: ");
   Serial.println(col);
-  //XBOX_BUTTON_DPAD_NORTH
+
   if( gamepadButtons[row][col] == NORTH_DIRE ){
     gamepad->pressDPadDirectionFlag(XboxDpadFlags::NORTH);
   }else if(gamepadButtons[row][col] == SOUTH_DIRE){
@@ -244,20 +418,52 @@ void pressButtons(int row, int col){
   
   gamepad->sendGamepadReport();
 
-  /*
-  if( keyboardLettersPressed[0][0]  ){  // XBOX_BUTTON_DPAD_NORTH 
-      gamepad->pressDPadDirectionFlag(XboxDpadFlags::NORTH);
-    }else if(gamepadButtons[1][0] ){  // XBOX_BUTTON_DPAD_SOUTH
-      gamepad->pressDPadDirectionFlag(XboxDpadFlags::SOUTH);
-    }else if(gamepadButtons[2][0] ){  // == XBOX_BUTTON_DPAD_WEST
-      gamepad->pressDPadDirectionFlag(XboxDpadFlags::WEST);
-    }else if(gamepadButtons[3][0] ){  // == XBOX_BUTTON_DPAD_EAST
-      gamepad->pressDPadDirectionFlag(XboxDpadFlags::EAST);
-    }else{
-      gamepad->press(gamepadButtons[row][col]);
-    }
-  */
 }  
+
+//UNPRESS BUTTONS
+void unpressJoystickButtonsRow(int row){
+
+  for(int i = 0 ; i < 8; i++){
+    unpressButtonsJoystickManager(row,i);
+  }
+  //gamepad->sendGamepadReport();
+
+}
+
+void unpressButtonsJoystickManager(int row, int col){
+  if (gamepadButtonsJoystickPressed[row][col] == true){
+    unpressButtonsJoystick( row, col);
+    gamepadButtonsJoystickPressed[row][col] = false;
+    Serial.print("unpres realease row: ");
+    Serial.print(row);
+    Serial.print(" ,col: ");
+    Serial.println(col);
+  }
+}
+
+void unpressButtonsJoystick(int row, int col){
+
+  //Serial.print("release: ");
+  Serial.println(gamepadButtonsJoystick[row][col]);
+  if( gamepadButtonsJoystick[row][col] == NORTH_DIRE || gamepadButtonsJoystick[row][col] == SOUTH_DIRE || gamepadButtonsJoystick[row][col] == WEST_DIRE  || gamepadButtonsJoystick[row][col] == EAST_DIRE){
+    gamepad  -> releaseDPad();
+    //Serial.print("release DPad ");
+  }else if(gamepadButtonsJoystick[row][col] == TRIGER_LEFT){  
+      gamepad  -> setLeftTrigger(0);
+      gamepad  -> setRightTrigger(0);
+  }else if(gamepadButtonsJoystick[row][col] == TRIGER_RIGHT){  
+      gamepad  -> setLeftTrigger(0);
+      gamepad  -> setRightTrigger(0);
+  }else{
+    gamepad->release(gamepadButtonsJoystick[row][col]);
+    //Serial.println("release gamepad buttons ");
+  }
+  gamepad->sendGamepadReport();
+  //delay(1);
+}
+
+
+
 
 void unpressButtons(int row, int col){
   
@@ -290,71 +496,16 @@ void unpressButtons(int row, int col){
 }
 
 
-/*void joystickDirection(int xJoyPin, int yJoyPin){
 
-  int xReading = readAxis(xJoyPin, true);
-  int yReading = readAxis(yJoyPin, false);
-  //int yReading = 0;
-  Serial.print("x: ");
-  Serial.print(xReading);
-  Serial.print(", y: ");
-  Serial.println(yReading);
-  if (bleGamepad.isConnected())
-  {
-    bleGamepad.setLeftThumb(xReading, yReading);
-  }
-}*/
-
-/*void joystickToKeyboardDirection(int xJoyPin, int yJoyPin, int leftKey, int rightKey, int upKey, int downKey, bool &leftPressed, bool &rightPressed, bool &upPressed, bool &downPressed){
-
-  int xReading = readAxis(xJoyPin, true);
-  int yReading = readAxis(yJoyPin, true);
-  Serial.print("x: ");
-  Serial.print(xReading);
-  Serial.print(", y: ");
-  Serial.println(yReading);
-  
-  if (xReading >=15){
-    rightPressed = true;
-    Keyboard.press(rightKey);
-  }else if(xReading <= -15){
-    leftPressed = true;
-    Keyboard.press(leftKey);
-  }else{
-    if(rightPressed == true){
-      rightPressed = false;
-      Keyboard.release(rightKey);
-    }
-    if(leftPressed == true){
-      leftPressed = false;
-      Keyboard.release(leftKey);
-    }  
-  }
-
-  if (yReading >=15){
-    upPressed = true;
-    Keyboard.press(upKey);
-  }else if(yReading <= -15){
-    downPressed = true;
-    Keyboard.press(downKey);
-  }else{
-    if(upPressed == true){
-      upPressed = false;
-      Keyboard.release(upKey);
-    }
-    if(downPressed == true){
-      downPressed = false;
-      Keyboard.release(downKey);
-    }
-  }
-}*/
 
 void keyboardDetection(){
 
+  //Serial.print("start keyboard ");
+  //Serial.print(millis());
   //Keyboard Detection
   for (int col = 0; col < 4; col++) {
     digitalWrite(buttonCol[col], LOW);
-    delay(1);
+    //delay(1);
     for (int row = 0; row < 5; row++) {
       int buttonState = digitalRead(buttonRow[row]);
       if (buttonState == LOW) {
@@ -370,18 +521,70 @@ void keyboardDetection(){
       }
     }
     
-    //delay(5000);
+  
     digitalWrite(buttonCol[col], HIGH);
-    delay(1);
+    //delay(1);
   }
+  //Serial.print(" ");
+  //Serial.print(millis());
+  //Serial.println(" finish keyboard");
+  
 }
+
+
 
 void loop() {
   
   //joystickDirection1();
-  keyboardDetection();
+  int startLoop = millis();
+  //keyboardDetection();
   joystickDirection(xJoystick1, yJoystick1, xJoystick2, yJoystick2);
-  delay(2);
+  joysticksButtons(xJoystickLEFTUP, yJoystickLEFTUP, xJoystickRIGTHUP, yJoystickRIGTHUP);
+  int delayLoop = millis() - startLoop;
+
+  int buttonLeftUp = digitalRead(triggerLEFTUP);
+  int buttonRigthUp= digitalRead(triggerRIGTHUP);
+
+  
+  if (buttonLeftUp == HIGH) {
+    if (gamepadButtonsJoystickPressed[0][8] == false) {
+        gamepadButtonsJoystickPressed[0][8] = true;
+        //gamepad->press(gamepadButtons[0][8]);
+        gamepad-> setLeftTrigger(30000);
+        gamepad->sendGamepadReport();
+    }    
+  } else {
+    if (gamepadButtonsJoystickPressed[0][8] == true) {
+      gamepad->release(gamepadButtons[0][8]);
+      gamepad-> setRightTrigger(0);
+      gamepad-> setLeftTrigger(0);
+      gamepad->sendGamepadReport();
+      gamepadButtonsJoystickPressed[0][8] = false;
+    }
+    //gamepadButtonsJoystickPressed[0][8] = false;
+  }
+
+  if (buttonRigthUp == HIGH) {
+    if (gamepadButtonsJoystickPressed[1][8] == false) {
+        gamepadButtonsJoystickPressed[1][8] = true;
+        //gamepad->press(gamepadButtons[1][8]);
+        gamepad-> setRightTrigger(30000);
+        gamepad->sendGamepadReport();
+      }    
+  } else {
+    if (gamepadButtonsJoystickPressed[1][8] == true) {
+      //gamepad->release(gamepadButtons[1][8]);
+      gamepad-> setRightTrigger(0);
+      gamepad-> setLeftTrigger(0);
+      gamepad->sendGamepadReport();
+      gamepadButtonsJoystickPressed[1][8] = false;
+    }
+    //gamepadButtonsJoystickPressed[0][8] = false;
+  }       
+
+  //Serial.print("loop elapse: ");
+  //Serial.println(delayLoop);
+  //delay(2);
 
 
   //joystickDirection(xJoystick2, yJoystick2, 'f', 'h', 't', 'g', leftJoystickPressed2, rigthJoystickPressed2, upJoystickPressed2, downJoystickPressed2);

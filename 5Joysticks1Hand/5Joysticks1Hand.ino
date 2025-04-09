@@ -23,8 +23,8 @@ bool xInvertJoyRU = false;
 bool yInvertJoyRU = false;
 */
 
-
-BleCompositeHID compositeHID("Multi C2", "Jota", 100);
+BleCompositeHID compositeHID("Multi C1", "Jota", 100);
+//BleCompositeHID compositeHID("Multi C2", "Jota", 100);
 
 bool xInvertJoyLD = false;
 bool yInvertJoyLD = false;
@@ -52,19 +52,19 @@ const int TRIGER_RIGHT = 142;
 
 //JOYSTICK VARIABLES
 
-//LEFT
-const int xJoystickLeftDownPin = 12;
-const int yJoystickLeftDownPin = 13;
-const int xJoystickLeftUpPin = 27;
-const int yJoystickLeftUpPin = 14;
-const int triggerButtons2 = 15;
+//LEFT  
+const int xJoystickLeftDownPin = 12;//13;//12;
+const int yJoystickLeftDownPin = 13;//14;//13;
+const int xJoystickLeftUpPin = 27;//11 ;//27;
+const int yJoystickLeftUpPin = 14;//12;//14;
+const int triggerButtons2 = 15;//19;//15;
 
 //RIGTH
-const int xJoystickRigthDownPin = 34;
-const int yJoystickRigthDownPin = 35;
-const int xJoystickRigthUpPin = 36;
-const int yJoystickRigthUpPin = 39;
-const int triggerButtons4 = 4;
+const int xJoystickRigthDownPin = 34;//18;//34;
+const int yJoystickRigthDownPin = 35;//8;//35;
+const int xJoystickRigthUpPin = 36;//16;//36;
+const int yJoystickRigthUpPin = 39;//17;//39;
+const int triggerButtons4 = 4;//20;//4;
 
 
 int range = 32767;  // output range of X or Y movement

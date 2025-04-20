@@ -1,17 +1,58 @@
 //#include <Arduino.h>
-//#include <BleGamepad.h>
+
+#include "ESP32_NOW.h"
+#include "WiFi.h"
+#include <esp_mac.h>  // For the MAC2STR and MACSTR macros
 
 #include <BleConnectionStatus.h>
 #include <BleCompositeHID.h>
 #include <XboxGamepadDevice.h>
 
+
+#define ESPNOW_WIFI_CHANNEL 6
+
+/* Classes */
+
+// Creating a new class that inherits from the ESP_NOW_Peer class is required.
+
+class ESP_NOW_Broadcast_Peer : public ESP_NOW_Peer {
+public:
+  // Constructor of the class using the broadcast address
+  ESP_NOW_Broadcast_Peer(uint8_t channel, wifi_interface_t iface, const uint8_t *lmk) : ESP_NOW_Peer(ESP_NOW.BROADCAST_ADDR, channel, iface, lmk) {}
+
+  // Destructor of the class
+  ~ESP_NOW_Broadcast_Peer() {
+    remove();
+  }
+
+  // Function to properly initialize the ESP-NOW and register the broadcast peer
+  bool begin() {
+    if (!ESP_NOW.begin() || !add()) {
+      log_e("Failed to initialize ESP-NOW or register the broadcast peer");
+      return false;
+    }
+    return true;
+  }
+
+  // Function to send a message to all devices within the network
+  bool send_message(const uint8_t *data, size_t len) {
+    if (!send(data, len)) {
+      log_e("Failed to broadcast message");
+      return false;
+    }
+    return true;
+  }
+};
+
+
+uint32_t msg_count = 0;
+// Create a broadcast peer object
+ESP_NOW_Broadcast_Peer broadcast_peer(ESPNOW_WIFI_CHANNEL, WIFI_IF_STA, NULL);
+
 //BleGamepad bleGamepad;
 //BleGamepadConfiguration bleGamepadConfig;  
   
 XboxGamepadDevice *gamepad;
-//
-
-
 
 bool xInvertJoyLD = false;
 bool yInvertJoyLD = false;
@@ -23,33 +64,30 @@ bool yInvertJoyLU = true;
 bool xInvertJoyRU = false;
 bool yInvertJoyRU = false;
 
-
 bool buttonJoystickLeftDownPressed = false;
 
+BleCompositeHID compositeHID("P1e", "P1e", 24);
 
-
-
-
-BleCompositeHID compositeHID("P1d", "P1d", 23);
 //JOYSTICK VARIABLES
 //LEFT  
-const int xJoystickLeftDownPin = 12;//13;//12;
-const int yJoystickLeftDownPin = 13;//14;//13;
-const int xJoystickLeftUpPin = 27;//11 ;//27;
-const int yJoystickLeftUpPin = 14;//12;//14;
+const int xJoystickLeftDownPin = 12;  //13;//12;
+const int yJoystickLeftDownPin = 13;  //14;//13;
+const int xJoystickLeftUpPin = 27;    //11 ;//27;
+const int yJoystickLeftUpPin = 14;    //12;//14;
 const int buttonJoystickLeftDown = 25;//19;//15;
 
 //RIGTH
-const int xJoystickRigthDownPin = 34;//18;//34;
-const int yJoystickRigthDownPin = 35;//8;//35;
-const int xJoystickRigthUpPin = 36;//16;//36;
-const int yJoystickRigthUpPin = 39;//17;//39;
-const int triggerButtons4 = 4;//20;//4;
+const int xJoystickRigthDownPin = 34; //18;//34;
+const int yJoystickRigthDownPin = 35; //8;//35;
+const int xJoystickRigthUpPin = 36;   //16;//36;
+const int yJoystickRigthUpPin = 39;   //17;//39;
+const int triggerButtons4 = 4;        //20;//4;
 
 
 /*
 //ESP32 P2
 BleCompositeHID compositeHID("P2c", "P2c", 22);
+BleCompositeHID compositeHID("P3c", "P3c", 22);
 //JOYSTICK VARIABLES
 //LEFT  
 const int xJoystickLeftDownPin =  13;//12;
@@ -174,6 +212,29 @@ void setup() {
   xCenterCalibrationRigthDown = analogRead(xJoystickRigthDownPin);
   yCenterCalibrationRigthDown = analogRead(yJoystickRigthDownPin);
 
+
+  // Initialize the Wi-Fi module
+  WiFi.mode(WIFI_STA);
+  WiFi.setChannel(ESPNOW_WIFI_CHANNEL);
+  while (!WiFi.STA.started()) {
+    delay(100);
+  }
+
+  Serial.println("ESP-NOW Example - Broadcast Master");
+  Serial.println("Wi-Fi parameters:");
+  Serial.println("  Mode: STA");
+  Serial.println("  MAC Address: " + WiFi.macAddress());
+  Serial.printf("  Channel: %d\n", ESPNOW_WIFI_CHANNEL);
+
+  // Register the broadcast peer
+  if (!broadcast_peer.begin()) {
+    Serial.println("Failed to initialize broadcast peer");
+    Serial.println("Reebooting in 5 seconds...");
+    delay(5000);
+    ESP.restart();
+  }
+
+  Serial.println("Setup complete. Broadcasting messages every 5 seconds.");
   
 }
 
@@ -333,7 +394,7 @@ void joysticksButtons(int xJoyPinLeft, int yJoyPinLeft, int xJoyPinRight, int yJ
   int xReadingRigth = readAxis(xJoyPinRight, xInvertJoyRU, xCenterCalibrationRigthUp);
   int yReadingRigth = readAxis(yJoyPinRight, yInvertJoyRU, yCenterCalibrationRigthUp);
   
-  
+  /*
   Serial.print("x LU: ");
   Serial.print(xReading);
   Serial.print(", y LU: ");
@@ -342,7 +403,7 @@ void joysticksButtons(int xJoyPinLeft, int yJoyPinLeft, int xJoyPinRight, int yJ
   Serial.print(xReadingRigth);
   Serial.print(", y RU: ");
   Serial.println(yReadingRigth);
-  
+  */
 
   joystickButtons(xReading, yReading, 0);
   joystickButtons(xReadingRigth, yReadingRigth, 1);
@@ -352,10 +413,23 @@ void joysticksButtons(int xJoyPinLeft, int yJoyPinLeft, int xJoyPinRight, int yJ
   
   delay(1);
 }
+void sendMessage(){
+  char data[32];
+  snprintf(data, sizeof(data), "Hello, World! #%lu", msg_count++);
+
+  Serial.printf("Broadcasting message: %s\n", data);
+
+  if (!broadcast_peer.send_message((uint8_t *)data, sizeof(data))) {
+    Serial.println("Failed to broadcast message");
+  }
+}
 
 //PRESS GAMEPAD JOYSTICK BUTTONS
 void pressButtonsJoystickManager(int row, int col){
   if (gamepadButtonsJoystickPressed[row][col] == false){
+
+    sendMessage();
+    
     pressButtonsJoystick(row, col);
     gamepadButtonsJoystickPressed[row][col] = true;
   }

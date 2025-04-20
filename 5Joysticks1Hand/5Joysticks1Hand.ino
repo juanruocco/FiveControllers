@@ -10,18 +10,7 @@
   
 XboxGamepadDevice *gamepad;
 //
-/*
-BleCompositeHID compositeHID("Multi Left2", "Jota", 100);
-bool xInvertJoyLD = false;
-bool yInvertJoyLD = false;
-bool xInvertJoyRD = true;
-bool yInvertJoyRD = false;
 
-bool xInvertJoyLU = true;
-bool yInvertJoyLU = true;
-bool xInvertJoyRU = false;
-bool yInvertJoyRU = false;
-*/
 
 
 bool xInvertJoyLD = false;
@@ -76,11 +65,6 @@ const int xJoystickRigthUpPin = 16;//36;
 const int yJoystickRigthUpPin = 17;//39;
 const int triggerButtons4 = 20;//4;
 */
-//BleCompositeHID compositeHID("Multi Test", "Jota", 100);
-
-//BleKeyboard Keyboard("FiveInOne", "Bluetooth Device Manufacturer", 100);
-
-//BleGamepad bleGamepad("RO1", "jota", 100);
 
 const int NORTH_DIRE = 135;
 const int SOUTH_DIRE = 136;
@@ -88,9 +72,6 @@ const int WEST_DIRE = 137;
 const int EAST_DIRE = 138;
 const int TRIGER_LEFT  = 141;
 const int TRIGER_RIGHT = 142;
-
-
-
 
 int range = 32767;  // output range of X or Y movement
 int minRange = 0;

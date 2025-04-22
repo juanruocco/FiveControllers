@@ -12,11 +12,12 @@ JoystickSensor::JoystickSensor(int pinX, int pinY, boolean inverseXDirection, bo
 }
 
 
-void JoystickSensor::init(){
+void JoystickSensor::init(XboxGamepadDevice *gamepad){
   centerXCalibration = analogRead(pinX);
   centerYCalibration = analogRead(pinY);
   Serial.print(" center x calibration: ");
   Serial.println(centerXCalibration);
+  this-> gamepad = gamepad;
 }
 
 int JoystickSensor::readX(){
@@ -25,6 +26,15 @@ int JoystickSensor::readX(){
 
 int JoystickSensor::readY(){
   return readAxis(pinY, inverseYDirection, centerYCalibration);
+}
+
+void JoystickSensor::detectAndPress(){
+
+  int xInput = readX();
+  int yInput = readY();
+
+  gamepad->setLeftThumb (xInput, yInput);
+  gamepad->sendGamepadReport();
 }
 
 int readAxis(int axis, boolean inverse, int centerCalibration) {// output: -4095 to 4095, 0 in  calibration choose default

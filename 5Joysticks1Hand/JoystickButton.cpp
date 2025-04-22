@@ -7,8 +7,8 @@ JoystickButton::JoystickButton(int pinX, int pinY, boolean inverseXDirection, bo
 }
 
 void JoystickButton::init(XboxGamepadDevice *gamepad){
-    JoystickSensor::init();
-    this-> gamepad = gamepad;
+    JoystickSensor::init(gamepad);
+    
 }
 
 void JoystickButton::detectAndPress(){

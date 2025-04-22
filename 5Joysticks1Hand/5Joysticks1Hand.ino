@@ -113,6 +113,7 @@ void setup() {
   gamepad->sendGamepadReport();
 
   joystickP2Direction.init(gamepad);
+  joystickP2Direction.setCallback(callbackDetectMovementJoystick);
   joystickP2Button.init(gamepad);
 
   // Initialize the Wi-Fi module
@@ -139,6 +140,14 @@ void setup() {
   Serial.println("Setup complete. Broadcasting messages every 5 seconds.");
   
 }
+
+void callbackDetectMovementJoystick(int positionX, int positionY) {
+  Serial.print("posX:  ");
+  Serial.print(positionX);
+  Serial.print(" ,pos Y: ");
+  Serial.println(positionY); 
+}
+
 
 void OnVibrateEvent(XboxGamepadOutputReportData data)
 {
@@ -200,7 +209,7 @@ void loop() {
   //keyboardDetection();
   joystickDirectionDetect();
   joysticksButtonsDetect();
-  
+
   /*
   int delayLoop = millis() - startLoop;
 

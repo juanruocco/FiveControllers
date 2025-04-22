@@ -20,6 +20,11 @@ void JoystickSensor::init(XboxGamepadDevice *gamepad){
   this-> gamepad = gamepad;
 }
 
+void JoystickSensor::setCallback(CallbackFunctionWithArgs callback) {
+  _callback = callback; // Guarda el puntero
+}
+
+
 int JoystickSensor::readX(){
   return readAxis(pinX, inverseXDirection, centerXCalibration);
 }
@@ -30,11 +35,23 @@ int JoystickSensor::readY(){
 
 void JoystickSensor::detectAndPress(){
 
-  int xInput = readX();
-  int yInput = readY();
+  int xPosition = readX();
+  int yPosition = readY();
+  if(lastPositionX != xPosition || lastPositionY != yPosition){
+  
+    if (_callback != NULL) {
+      _callback(xPosition, yPosition); // ¡Aquí se ejecuta la función del .ino y recibe los valores!
+      //Serial.println("Libreria: El callback del .ino terminó de ejecutarse.");
+    } //else { //Serial.println("Libreria: No hay función de callback configurada.");}
 
-  gamepad->setLeftThumb (xInput, yInput);
-  gamepad->sendGamepadReport();
+    gamepad->setLeftThumb (xPosition, yPosition);
+    gamepad->sendGamepadReport();
+
+  }
+
+  lastPositionX = xPosition;
+  lastPositionY = yPosition;
+
 }
 
 int readAxis(int axis, boolean inverse, int centerCalibration) {// output: -4095 to 4095, 0 in  calibration choose default

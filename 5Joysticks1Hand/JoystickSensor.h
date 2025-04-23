@@ -9,6 +9,7 @@
 const int thresholdError = 400;//TODO: check if reduce this threshold to more precicion but errors int the button detection
 const int range = 32767;  // output range of X or Y movement
 
+
 typedef void (*CallbackFunctionWithArgs)(int x, int y);
 
 class JoystickSensor {

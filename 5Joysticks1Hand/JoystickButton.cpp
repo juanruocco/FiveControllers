@@ -7,8 +7,11 @@ JoystickButton::JoystickButton(int pinX, int pinY, boolean inverseXDirection, bo
 }
 
 void JoystickButton::init(XboxGamepadDevice *gamepad){
-    JoystickSensor::init(gamepad);
-    
+    JoystickSensor::init(gamepad);    
+}
+
+void JoystickButton::setCallbackDirection(CallbackFunctionWithArg callbackDirection) {
+  _callbackDirection = callbackDirection; // Guarda el puntero
 }
 
 void JoystickButton::detectAndPress(){
@@ -38,6 +41,11 @@ void JoystickButton::releaseAllButtons(){
 
 void JoystickButton::releaseButtonsJoystickManager(int direction){
   if (directionPressed[direction] == true){
+
+    if (_callbackDirection != NULL) {
+      _callbackDirection(direction, false); // ¡Aquí se ejecuta la función del .ino y recibe los valores!
+    } //else { //Serial.println("Libreria: No hay función de callback configurada.");}
+
     releaseButtonsJoystick( direction);
     directionPressed[direction] = false;
     Serial.print("RELEASE  DIREC: ");
@@ -57,6 +65,9 @@ void JoystickButton::pressButtonsJoystick(int direction){
   Serial.print(" ,Code Button: ");
   Serial.println(gamepadButtonsJoystick[buttonSide][direction]);
   
+  if (_callbackDirection != NULL) {
+      _callbackDirection(direction, true); // ¡Aquí se ejecuta la función del .ino y recibe los valores!
+  } //else { //Serial.println("Libreria: No hay función de callback configurada.");}
 
   if( gamepadButtonsJoystick[buttonSide][direction] == NORTH_DIRE ){
     gamepad->pressDPadDirectionFlag(XboxDpadFlags::NORTH);

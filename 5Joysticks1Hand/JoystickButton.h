@@ -23,9 +23,13 @@ const uint16_t gamepadButtonsJoystick[2][10] =   {
                                               { 0 ,XBOX_BUTTON_Y   ,TRIGER_RIGHT         ,XBOX_BUTTON_B    ,XBOX_BUTTON_RB  , XBOX_BUTTON_A  ,XBOX_BUTTON_RS   ,XBOX_BUTTON_X   ,XBOX_BUTTON_START    , XBOX_BUTTON_SHARE }     
                                           };
 
+typedef void (*CallbackFunctionWithArg)(int direction, boolean isPressed);
+
 class JoystickButton: public JoystickSensor{
   
   private:
+    CallbackFunctionWithArg _callbackDirection = NULL;
+
     boolean directionPressed[10] = { false };
     int buttonSide; //0 Left, 1 Rigth
     
@@ -39,6 +43,8 @@ class JoystickButton: public JoystickSensor{
   public:
     JoystickButton(int pinX, int pinY, boolean inverseXDirection, boolean inverseYDirection, int buttonSide);
     void init(XboxGamepadDevice *gamepad);
+    void setCallbackDirection(CallbackFunctionWithArg callbackDirection);
+
     int detectDirecction();
     void detectAndPress();
     

@@ -1,7 +1,11 @@
 //#include <Arduino.h>
-#define PLAYER_2_ENABLED
+//#define PLAYER_2_ENABLED //18
+#define PLAYER_3_ENABLED 
+//#define PLAYER_4_ENABLED
 
-#define PLAYER_ID 2
+//#define PLAYER_ID 3
+
+
 
 uint8_t MAC_P2[] = {0x64, 0xE8, 0x33, 0x7E, 0x04, 0x3C};  
 uint8_t MAC_P3[] = {0xA0, 0x85, 0xE3, 0xE7, 0x44, 0x28};  
@@ -20,9 +24,38 @@ uint8_t MAC_P4[] = {0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC};
 #include "JoystickDirection.h"
 #include "JoystickButton.h"
 
+
+XboxGamepadDevice *gamepad;
+
+bool buttonJoystickLeftDownPressed = false;
+
+#ifdef PLAYER_2_ENABLED
+BleCompositeHID compositeHID("P2f", "P2f", 26);
+#endif
+
+#ifdef PLAYER_3_ENABLED
+BleCompositeHID compositeHID("P3f", "P3f", 26);
+#endif
+
+#ifdef PLAYER_4_ENABLED
+BleCompositeHID compositeHID("P4f", "P4f", 26);
+#endif
+
+//JOYSTICK VARIABLES
+
+//JoystickSensor joystickP1Direction = JoystickSensor(1, 2, false, false)
+JoystickSensor joystickP2Direction   = JoystickSensor(6, 7, true, true);
+//JoystickSensor joystickP3Direction = JoystickSensor(17, 18, false, false)
+//JoystickSensor joystickP4Direction = JoystickSensor( 9, 10, false, false)
+//JoystickSensor joystickP5Direction = JoystickSensor(20, 19, false, false)
+
+JoystickButton joystickP2Button = JoystickButton(4, 5, false, false, 0);
+
+
+
 #define ESPNOW_WIFI_IFACE WIFI_IF_STA // Wi-Fi interface to be used by the ESP-NOW protocol
 #define ESPNOW_WIFI_CHANNEL 4         // Channel to be used by the ESP-NOW protocol
-#define ESPNOW_SEND_INTERVAL_MS 100  // Delay between sending messages
+#define ESPNOW_SEND_INTERVAL_MS 500  // Delay between sending messages
 #define ESPNOW_PEER_COUNT 1           // Number of peers to wait for (excluding this device)
 #define REPORT_INTERVAL 5             // Report to other devices every 5 messages
 
@@ -171,59 +204,17 @@ bool check_all_peers_ready() {
 // Callback called when a new peer is found
 void register_new_peer(const esp_now_recv_info_t *info, const uint8_t *data, int len, void *arg) {
   esp_now_data_t *msg = (esp_now_data_t *)data;
-  int priority = msg->priority;
+  Serial.printf("At Begin New peer found: " MACSTR " ", MAC2STR(info->src_addr));
 
-  if (priority == self_priority) {
-    Serial.println("ERROR! Device has the same priority as this device. Unsupported behavior.");
-    fail_reboot();
+  ESP_NOW_Network_Peer *new_peer = new ESP_NOW_Network_Peer(info->src_addr, 1);
+  if (new_peer == nullptr || !new_peer->begin()) {
+    Serial.println("Failed to create or register the new peer");
+    delete new_peer;
+    return;
   }
-
-  if (current_peer_count < ESPNOW_PEER_COUNT) {
-    Serial.printf("New peer found: " MACSTR " with priority %d\n", MAC2STR(info->src_addr), priority);
-    ESP_NOW_Network_Peer *new_peer = new ESP_NOW_Network_Peer(info->src_addr, priority);
-    if (new_peer == nullptr || !new_peer->begin()) {
-      Serial.println("Failed to create or register the new peer");
-      delete new_peer;
-      return;
-    }
-    peers.push_back(new_peer);
-    current_peer_count++;
-    if (current_peer_count == ESPNOW_PEER_COUNT) {
-      Serial.println("All peers have been found");
-      new_msg.ready = true;
-    }
-  }
+  peers.push_back(new_peer);  
+    
 }
-
-
-
-
-
-
-XboxGamepadDevice *gamepad;
-
-bool buttonJoystickLeftDownPressed = false;
-
-BleCompositeHID compositeHID("P3f", "P3f", 26);
-/*
-//ESP32 P2
-BleCompositeHID compositeHID("P2c", "P2c", 22);
-BleCompositeHID compositeHID("P3c", "P3c", 22);
-*/
-
-//JOYSTICK VARIABLES
-
-//JoystickSensor joystickP1Direction = JoystickSensor(1, 2, false, false)
-JoystickSensor joystickP2Direction   = JoystickSensor(6, 7, true, true);
-//JoystickSensor joystickP3Direction = JoystickSensor(17, 18, false, false)
-//JoystickSensor joystickP4Direction = JoystickSensor( 9, 10, false, false)
-//JoystickSensor joystickP5Direction = JoystickSensor(20, 19, false, false)
-
-JoystickButton joystickP2Button = JoystickButton(4, 5, false, false, 0);
-
-
-
-
 
 
 void setup() {
@@ -317,7 +308,9 @@ void callbackDetectMovementJoystick(int positionX, int positionY) {
   Serial.println(positionY); 
   //sendDataToPeer(MAC_P3);
   //sendMessage();
+  
   Serial.printf("Heap libre: %d bytes\n", ESP.getFreeHeap());
+  sendTestMessage();
   delay(10);//TODO: increase to 10 and put the delay do it with a counter time instead of delay()
 
 }
@@ -329,6 +322,7 @@ void callbackDetectButtonsJoystick(int direction, boolean isPressed){
   Serial.println(isPressed); 
   //sendDataToPeer(MAC_P3);
   Serial.printf("Heap libre: %d bytes\n", ESP.getFreeHeap());
+  sendTestMessage();
   delay(10);
 }
 
@@ -381,9 +375,33 @@ void pressButtonsJoystickManager(int row, int col){
     gamepadButtonsJoystickPressed[row][col] = true;
   }
 }
-
 */
 
+
+int countPeers(){
+  int count = 0;
+  for (auto &peer : peers) {
+    count++;
+  }
+  return count; 
+}
+
+
+void sendTestMessage(){
+  new_msg.count = sent_msg_count + 1;
+  new_msg.data = random(10000);
+  for (auto &peer : peers) {
+    if (memcmp(peer->addr(), MAC_P3, 6) == 0) {
+      Serial.println("Enviando datos a P3");
+      if (!peer->send_message((const uint8_t *)&new_msg, sizeof(new_msg))) {
+        Serial.printf("Failed to send message to peer " MACSTR "\n", MAC2STR(peer->addr()));
+      } else {
+        Serial.printf("Sent message \"%s\" to peer " MACSTR "\n", new_msg.str, MAC2STR(peer->addr()));
+        sent_msg_count++;
+      }
+    }
+  } 
+}
 
 void loop() {
   
@@ -393,85 +411,12 @@ void loop() {
   joystickDirectionDetect();
   joysticksButtonsDetect();
 
+  Serial.print("Peers count: ");
+  Serial.println(countPeers());
 
-  if (!master_decided) {
-    // Broadcast the priority to find the master
-    if (!broadcast_peer.send_message((const uint8_t *)&new_msg, sizeof(new_msg))) {
+  if (!broadcast_peer.send_message((const uint8_t *)&new_msg, sizeof(new_msg))) {
       Serial.println("Failed to broadcast message");
-    }
-
-    // Check if all peers have been found
-    if (current_peer_count == ESPNOW_PEER_COUNT) {
-      // Wait until all peers are ready
-      if (check_all_peers_ready()) {
-        Serial.println("All peers are ready");
-        // Check which device has the highest priority
-        master_decided = true;
-        uint32_t highest_priority = check_highest_priority();
-        if (highest_priority == self_priority) {
-          device_is_master = true;
-          Serial.println("This device is the master");
-        } else {
-          for (int i = 0; i < ESPNOW_PEER_COUNT; i++) {
-            if (peers[i]->priority == highest_priority) {
-              peers[i]->peer_is_master = true;
-              master_peer = peers[i];
-              Serial.printf("Peer " MACSTR " is the master with priority %lu\n", MAC2STR(peers[i]->addr()), highest_priority);
-              break;
-            }
-          }
-        }
-        Serial.println("The master has been decided");
-      } else {
-        Serial.println("Waiting for all peers to be ready...");
-      }
-    }
-  } else {
-    if (!device_is_master) {
-      // Send a message to the master
-      new_msg.count = sent_msg_count + 1;
-      new_msg.data = random(10000);
-      if (!master_peer->send_message((const uint8_t *)&new_msg, sizeof(new_msg))) {
-        Serial.println("Failed to send message to the master");
-      } else {
-        Serial.printf("Sent message to the master. Count: %lu, Data: %lu\n", new_msg.count, new_msg.data);
-        sent_msg_count++;
-      }
-
-      // Check if it is time to report to peers
-      if (sent_msg_count % REPORT_INTERVAL == 0) {
-        // Send a message to the peers
-        for (auto &peer : peers) {
-          if (!peer->peer_is_master) {
-            if (!peer->send_message((const uint8_t *)&new_msg, sizeof(new_msg))) {
-              Serial.printf("Failed to send message to peer " MACSTR "\n", MAC2STR(peer->addr()));
-            } else {
-              Serial.printf("Sent message \"%s\" to peer " MACSTR "\n", new_msg.str, MAC2STR(peer->addr()));
-            }
-          }
-        }
-      }
-    } else {
-      // Check if it is time to report to peers
-      if (recv_msg_count % REPORT_INTERVAL == 0) {
-        // Report average data to the peers
-        uint32_t avg = calc_average();
-        new_msg.data = avg;
-        for (auto &peer : peers) {
-          new_msg.count = sent_msg_count + 1;
-          if (!peer->send_message((const uint8_t *)&new_msg, sizeof(new_msg))) {
-            Serial.printf("Failed to send message to peer " MACSTR "\n", MAC2STR(peer->addr()));
-          } else {
-            Serial.printf(
-              "Sent message to peer " MACSTR ". Recv: %lu, Sent: %lu, Avg: %lu\n", MAC2STR(peer->addr()), recv_msg_count, new_msg.count, new_msg.data
-            );
-            sent_msg_count++;
-          }
-        }
-      }
-    }
   }
-
   delay(ESPNOW_SEND_INTERVAL_MS);
   /*
   int delayLoop = millis() - startLoop;

@@ -37,8 +37,10 @@ void JoystickSensor::detectAndPress(){
 
   int xPosition = readX();
   int yPosition = readY();
-  if(lastPositionX != xPosition || lastPositionY != yPosition){
-  
+  boolean lastValueIsDiferent = lastPositionX != xPosition || lastPositionY != yPosition;
+  boolean positionDiferenceIsBigToCallback = abs(xPosition-lastPositionX)>distanceToAvoidCallback || abs(yPosition-lastPositionY)>distanceToAvoidCallback || (xPosition == 0 && yPosition == 0);
+  if(lastValueIsDiferent && positionDiferenceIsBigToCallback){
+    
     if (_callback != NULL) {
       _callback(xPosition, yPosition); // ¡Aquí se ejecuta la función del .ino y recibe los valores!
       //Serial.println("Libreria: El callback del .ino terminó de ejecutarse.");
@@ -47,10 +49,10 @@ void JoystickSensor::detectAndPress(){
     gamepad->setLeftThumb (xPosition, yPosition);
     gamepad->sendGamepadReport();
 
-  }
+    lastPositionX = xPosition;
+    lastPositionY = yPosition;
 
-  lastPositionX = xPosition;
-  lastPositionY = yPosition;
+  }
 
 }
 

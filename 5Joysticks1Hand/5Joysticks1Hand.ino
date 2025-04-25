@@ -1,11 +1,9 @@
 //#include <Arduino.h>
 //#define PLAYER_2_ENABLED //18
-#define PLAYER_2_ENABLED //17 
+#define PLAYER_3_ENABLED //17 
 //#define PLAYER_4_ENABLED
 
 //#define PLAYER_ID 3
-
-
 
 uint8_t MAC_P2[] = {0x64, 0xE8, 0x33, 0x7E, 0x04, 0x3C};  
 uint8_t MAC_P3[] = {0xA0, 0x85, 0xE3, 0xE7, 0x44, 0x28};  
@@ -22,9 +20,7 @@ bool incomingLED_status;
 #include <BleCompositeHID.h>
 #include <XboxGamepadDevice.h>
 
-#include "JoystickDirection.h"
 #include "JoystickButton.h"
-
 
 XboxGamepadDevice *gamepad;
 
@@ -55,13 +51,14 @@ JoystickButton joystickP2Button = JoystickButton(4, 5, false, false, 0);
 
 
 
-
+int countMessage = 0;
 typedef struct struct_message {
     int idPlayer;       // ID del dispositivo que envía (ej: 1, 2, 3)
     boolean isLeftSide;  // Algún valor de ejemplo
     boolean isUpSide;  // Algún valor de ejemplo
     int value1;
     int value2;
+    int num_message;
 } struct_message;
 
 /*
@@ -76,14 +73,16 @@ esp_now_peer_info_t peerInfo;
 
 // callback when data is sent
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
-  Serial.print("\r\nLast Packet Send Status:\t");
-  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
+  //Serial.print("\r\nLast Packet Send Status:\t");
+  //Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
 }
 
 void OnDataRecv(const esp_now_recv_info * info, const uint8_t *incomingData, int len) {
   const uint8_t * mac_addr = info->des_addr; // O info->des_addr
   memcpy(&incomingReadings, incomingData, sizeof(incomingReadings));
-  Serial.print("value 1: ");
+  Serial.print("count: ");
+  Serial.print(incomingReadings.num_message);
+  Serial.print(" ,value 1: ");
   Serial.print(incomingReadings.value1);
   Serial.print(" ,value 2: ");
   Serial.print(incomingReadings.value2);
@@ -151,7 +150,8 @@ void setup() {
   esp_now_register_recv_cb(OnDataRecv);
 
   // Register peer
-  memcpy(peerInfo.peer_addr, MAC_P3, 6);
+  memcpy(peerInfo.peer_addr, broadcastAddress, 6);
+  //memset(peerInfo.lmk, 0, ESP_NOW_KEY_LEN);
   peerInfo.channel = 0;
   peerInfo.encrypt = false;
 
@@ -160,6 +160,26 @@ void setup() {
     Serial.println("Failed to add peer");
     return;
   }
+  Serial.println("Broadcast registrado.");
+
+
+  #ifndef PLAYER_2_ENABLED
+    memcpy(peerInfo.peer_addr, MAC_P2, 6);
+    if (esp_now_add_peer(&peerInfo) != ESP_OK){
+      Serial.println("Fallo al añadir peer P2");
+      return;
+    }
+    Serial.println("Peer P2 registrado.");
+  #endif
+
+  #ifndef PLAYER_3_ENABLED
+    memcpy(peerInfo.peer_addr, MAC_P3, 6);
+    if (esp_now_add_peer(&peerInfo) != ESP_OK){
+      Serial.println("Fallo al añadir peer P3");
+      return;
+    }
+    Serial.println("Peer P3 registrado.");
+  #endif
   
 }
 
@@ -256,12 +276,14 @@ void pressButtonsJoystickManager(int row, int col){
 */
 
 void sendTestMessage(){
-  esp_err_t result = esp_now_send(MAC_P3, (uint8_t *) &myData, sizeof(myData)); // declaration
+  myData.num_message = countMessage;
+  esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &myData, sizeof(myData)); // declaration
   if (result == ESP_OK) {
     Serial.println("Proccess sent successfull");
   }else{
     Serial.println("Error sending the data");
   }
+  countMessage++;
 }
 
 void loop() {
@@ -270,12 +292,14 @@ void loop() {
   int startLoop = millis();
   //keyboardDetection();
   joystickDirectionDetect();
+  delay(1);
   joysticksButtonsDetect();
-
+  delay(1);
   //Serial.print("Peers count: ");
   //Serial.println(countPeers());
 
-  delay(50);
+  delay(10);
+  
   /*
   int delayLoop = millis() - startLoop;
 

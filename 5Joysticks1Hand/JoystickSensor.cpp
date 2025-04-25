@@ -18,6 +18,7 @@ void JoystickSensor::init(XboxGamepadDevice *gamepad){
   Serial.print(" center x calibration: ");
   Serial.println(centerXCalibration);
   this-> gamepad = gamepad;
+  lastTimeCheck = millis();
 }
 
 void JoystickSensor::setCallback(CallbackFunctionWithArgs callback) {
@@ -39,7 +40,8 @@ void JoystickSensor::detectAndPress(){
   int yPosition = readY();
   boolean lastValueIsDiferent = lastPositionX != xPosition || lastPositionY != yPosition;
   boolean positionDiferenceIsBigToCallback = abs(xPosition-lastPositionX)>distanceToAvoidCallback || abs(yPosition-lastPositionY)>distanceToAvoidCallback || (xPosition == 0 && yPosition == 0);
-  if(lastValueIsDiferent && positionDiferenceIsBigToCallback){
+  boolean pastTimeMaximumToCallback = (millis() - lastTimeCheck) >maxTimeToAvoidCallback;
+  if( (lastValueIsDiferent && positionDiferenceIsBigToCallback) || pastTimeMaximumToCallback){
     
     if (_callback != NULL) {
       _callback(xPosition, yPosition); // ¡Aquí se ejecuta la función del .ino y recibe los valores!
@@ -51,6 +53,7 @@ void JoystickSensor::detectAndPress(){
 
     lastPositionX = xPosition;
     lastPositionY = yPosition;
+    lastTimeCheck = millis();
 
   }
 

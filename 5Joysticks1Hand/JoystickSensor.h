@@ -9,14 +9,16 @@
 const int thresholdError = 400;//TODO: check if reduce this threshold to more precicion but errors int the button detection
 const int range = 32767;  // output range of X or Y movement
 
-const int distanceToAvoidCallback = 9000;  // output range of X or Y movement
-
+const int distanceToAvoidCallback = 3000;  // output range of X or Y movement
+const int maxTimeToAvoidCallback = 500;
 
 typedef void (*CallbackFunctionWithArgs)(int x, int y);
 
 class JoystickSensor {
 
   private:
+
+    int lastTimeCheck;
     int pinX;
     int pinY;
     

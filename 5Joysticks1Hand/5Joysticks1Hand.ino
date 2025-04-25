@@ -1,6 +1,6 @@
 //#include <Arduino.h>
 //#define PLAYER_2_ENABLED //18
-#define PLAYER_3_ENABLED //17 
+#define PLAYER_2_ENABLED //17 
 //#define PLAYER_4_ENABLED
 
 //#define PLAYER_ID 3
@@ -289,7 +289,7 @@ void sendTestMessage(){
 void loop() {
   
   //joystickDirection1();
-  int startLoop = millis();
+  //int startLoop = millis();
   //keyboardDetection();
   joystickDirectionDetect();
   delay(1);

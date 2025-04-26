@@ -54,8 +54,8 @@ BleCompositeHID compositeHID("P4f", "P4f", 28);
 //JOYSTICK VARIABLES
 
 JoystickSensor joystickP2Direction = JoystickSensor(6,   7, true, true);
-JoystickSensor joystickP3Direction = JoystickSensor(17, 18, true, true)
-JoystickSensor joystickP4Direction = JoystickSensor( 9, 10, true, true)
+JoystickSensor joystickP3Direction = JoystickSensor(17, 18, true, true);
+JoystickSensor joystickP4Direction = JoystickSensor( 9, 10, true, true);
 
 
 JoystickButton joystickP2Button = JoystickButton( 4,  5, false, false, 0);

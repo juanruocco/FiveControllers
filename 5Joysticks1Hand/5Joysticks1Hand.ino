@@ -1,6 +1,6 @@
 //#include <Arduino.h>
 //#define DEVICE_2_ENABLED //18
-#define DEVICE_2_ENABLED //17 
+#define DEVICE_3_ENABLED   //17 
 //#define DEVICE_4_ENABLED
 
 
@@ -88,22 +88,30 @@ esp_now_peer_info_t peerInfo;
 
 //Print Message
 void printMessage(struct_message incomingReadings, int len){
+  
   Serial.print("count: ");
-  Serial.print(incomingReadings.num_message);
-  Serial.print("\t,direction: ");
-  Serial.print(incomingReadings.joystickButtons[1].direction);
-  Serial.print("\t,posX: ");
-  Serial.print(incomingReadings.joystickButtons[1].posX);
-  Serial.print("\t,posY: ");
-  Serial.print(incomingReadings.joystickButtons[1].posY);
-  Serial.print("\t,idPlayer: ");
-  Serial.print(incomingReadings.joystickButtons[1].idPlayer);
-  Serial.print("\t,isLeftSide ");
-  Serial.print(incomingReadings.joystickButtons[1].isLeftSide);
-  Serial.print("\t,isPressUp: ");
-  Serial.print(incomingReadings.joystickButtons[1].isPressUp);
-  Serial.print("\t,isPressDown: ");
-  Serial.print(incomingReadings.joystickButtons[1].isPressDown);
+  Serial.print(incomingReadings.num_message);      
+
+  for(int i = 1; i<4 ; i++){
+    Serial.print("\t,id: ");
+    Serial.print(incomingReadings.joystickButtons[i].idPlayer);
+    Serial.print("\t,direc: ");
+    Serial.print(incomingReadings.joystickButtons[i].direction);
+    Serial.print("\t,posX: ");
+    Serial.print(incomingReadings.joystickButtons[i].posX);
+    Serial.print("\t,posY: ");
+    Serial.print(incomingReadings.joystickButtons[i].posY);
+    
+    /*
+    Serial.print("\t,isLeftSide ");
+    Serial.print(incomingReadings.joystickButtons[i].isLeftSide);
+    Serial.print("\t,isPressUp: ");
+    Serial.print(incomingReadings.joystickButtons[i].isPressUp);
+    Serial.print("\t,isPressDown: ");
+    Serial.print(incomingReadings.joystickButtons[i].isPressDown);
+    */
+  }
+  
   
   Serial.print("\t,Bytes received: ");
   Serial.println(len);
@@ -121,7 +129,7 @@ void OnDataRecv(const esp_now_recv_info * info, const uint8_t *incomingData, int
   const uint8_t * mac_addr = info->des_addr; // O info->des_addr
   memcpy(&incomingReadings, incomingData, sizeof(incomingReadings));
   
-  //printMessage(incomingReadings, len);
+  printMessage(incomingReadings, len);
   for(int i = 0; i<5; i++){
     if(incomingReadings.joystickButtons[i].idPlayer == DEVICE_ID){
         int posX = incomingReadings.joystickButtons[i].posX;
@@ -172,7 +180,7 @@ void setup() {
   joystickP2Direction.init(gamepad);
   joystickP2Direction.setCallback(callbackDetectMovementJoystick);
   joystickP3Direction.init(gamepad);
-  joystickP3Direction.init(gamepad);
+  joystickP4Direction.init(gamepad);
 
   joystickP2Button.init(gamepad);
   joystickP2Button.setCallbackDirection(callbackDetectButtonsJoystick);
@@ -228,13 +236,13 @@ void setup() {
   #endif
 
   //DATA INIT
-  myData.joystickButtons[1].idPlayer = 3;
+  /*myData.joystickButtons[1].idPlayer = 3;
   myData.joystickButtons[1].isLeftSide  = true;
   myData.joystickButtons[1].isPressUp   = false;
   myData.joystickButtons[1].isPressDown = false;
   myData.joystickButtons[1].direction = 0;
   myData.joystickButtons[1].posX = 0;
-  myData.joystickButtons[1].posY = 0;
+  myData.joystickButtons[1].posY = 0;*/
   
 }
 
@@ -319,29 +327,40 @@ void loop() {
     //joystickDirectionDetect();
     //joysticksButtonsDetect();
     
-    int direction = joystickP2Button.detectDirecction();
-    int x = joystickP2Direction.readX();
-    int y = joystickP2Direction.readY();
-    
-    joystickP2Direction.press(x, y, false);
+    int direction2 = joystickP2Button.detectDirecction();
+    int x2 = joystickP2Direction.readX();
+    int y2 = joystickP2Direction.readY();
+    joystickP2Direction.press(x2, y2, false);
     delay(1);
-    joystickP2Button.pressButton(direction, false);
+    joystickP2Button.pressButton(direction2, false);
     delay(1);
+
+    int direction3 = joystickP3Button.detectDirecction();
+    int x3 = joystickP3Direction.readX();
+    int y3 = joystickP3Direction.readY();
     myData.joystickButtons[1].idPlayer = 3;
     myData.joystickButtons[1].isLeftSide  = true;
     myData.joystickButtons[1].isPressUp   = false;
     myData.joystickButtons[1].isPressDown = false;
-    myData.joystickButtons[1].direction = direction;
-    myData.joystickButtons[1].posX = x;
-    myData.joystickButtons[1].posY = y;
+    myData.joystickButtons[1].direction = direction3;
+    myData.joystickButtons[1].posX = x3;
+    myData.joystickButtons[1].posY = y3;
+
+    int direction4 = joystickP4Button.detectDirecction();
+    int x4 = joystickP4Direction.readX();
+    int y4 = joystickP4Direction.readY();
+    myData.joystickButtons[2].idPlayer = 4;
+    myData.joystickButtons[2].isLeftSide  = true;
+    myData.joystickButtons[2].isPressUp   = false;
+    myData.joystickButtons[2].isPressDown = false;
+    myData.joystickButtons[2].direction = direction4;
+    myData.joystickButtons[2].posX = x4;
+    myData.joystickButtons[2].posY = y4;
+
     sendTestMessage();
-    lastTimeCheckMillis = currentMillis;
-
-
-
+    
     //Serial.print("Current Millis: ");
-    //Serial.println(lastTimeCheckMillis);
-  
+    //Serial.println(lastTimeCheckMillis); 
     lastTimeCheckMillis = currentMillis;
   }
     

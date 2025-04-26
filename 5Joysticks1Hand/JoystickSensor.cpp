@@ -34,16 +34,22 @@ int JoystickSensor::readY(){
   return readAxis(pinY, inverseYDirection, centerYCalibration);
 }
 
-void JoystickSensor::detectAndPress(){
+void JoystickSensor::detectAndPress(boolean callback){
 
   int xPosition = readX();
   int yPosition = readY();
+  press(xPosition, yPosition, callback);
+
+}
+
+void JoystickSensor::press(int xPosition, int yPosition, boolean callback){
+  
   boolean lastValueIsDiferent = lastPositionX != xPosition || lastPositionY != yPosition;
   boolean positionDiferenceIsBigToCallback = abs(xPosition-lastPositionX)>distanceToAvoidCallback || abs(yPosition-lastPositionY)>distanceToAvoidCallback || (xPosition == 0 && yPosition == 0);
   boolean pastTimeMaximumToCallback = (millis() - lastTimeCheck) >maxTimeToAvoidCallback;
   if( (lastValueIsDiferent && positionDiferenceIsBigToCallback) || pastTimeMaximumToCallback){
     
-    if (_callback != NULL) {
+    if (_callback != NULL && callback) {
       _callback(xPosition, yPosition); // ¡Aquí se ejecuta la función del .ino y recibe los valores!
       //Serial.println("Libreria: El callback del .ino terminó de ejecutarse.");
     } //else { //Serial.println("Libreria: No hay función de callback configurada.");}
@@ -56,7 +62,6 @@ void JoystickSensor::detectAndPress(){
     lastTimeCheck = millis();
 
   }
-
 }
 
 int readAxis(int axis, boolean inverse, int centerCalibration) {// output: -4095 to 4095, 0 in  calibration choose default

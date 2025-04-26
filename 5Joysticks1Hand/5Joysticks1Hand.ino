@@ -1,9 +1,20 @@
 //#include <Arduino.h>
-//#define PLAYER_2_ENABLED //18
-#define PLAYER_2_ENABLED //17 
-//#define PLAYER_4_ENABLED
+//#define DEVICE_2_ENABLED //18
+#define DEVICE_2_ENABLED //17 
+//#define DEVICE_4_ENABLED
 
-//#define PLAYER_ID 3
+
+#ifdef DEVICE_2_ENABLED
+#define DEVICE_ID 2
+#endif
+
+#ifdef DEVICE_3_ENABLED
+#define DEVICE_ID 3
+#endif
+
+#ifdef DEVICE_4_ENABLED
+#define DEVICE_ID 4
+#endif
 
 uint8_t MAC_P2[] = {0x64, 0xE8, 0x33, 0x7E, 0x04, 0x3C};  
 uint8_t MAC_P3[] = {0xA0, 0x85, 0xE3, 0xE7, 0x44, 0x28};  
@@ -22,54 +33,83 @@ bool incomingLED_status;
 
 #include "JoystickButton.h"
 
+int lastTimeCheckMillis = 0;
+
 XboxGamepadDevice *gamepad;
 
 bool buttonJoystickLeftDownPressed = false;
 
-#ifdef PLAYER_2_ENABLED
-BleCompositeHID compositeHID("P2f", "P2f", 26);
+#ifdef DEVICE_2_ENABLED
+BleCompositeHID compositeHID("P2f", "P2f", 28);
 #endif
 
-#ifdef PLAYER_3_ENABLED
-BleCompositeHID compositeHID("P3f", "P3f", 26);
+#ifdef DEVICE_3_ENABLED
+BleCompositeHID compositeHID("P3f", "P3f", 28);
 #endif
 
-#ifdef PLAYER_4_ENABLED
-BleCompositeHID compositeHID("P4f", "P4f", 26);
+#ifdef DEVICE_4_ENABLED
+BleCompositeHID compositeHID("P4f", "P4f", 28);
 #endif
 
 //JOYSTICK VARIABLES
 
-//JoystickSensor joystickP1Direction = JoystickSensor(1, 2, false, false)
-JoystickSensor joystickP2Direction   = JoystickSensor(6, 7, true, true);
-//JoystickSensor joystickP3Direction = JoystickSensor(17, 18, false, false)
-//JoystickSensor joystickP4Direction = JoystickSensor( 9, 10, false, false)
-//JoystickSensor joystickP5Direction = JoystickSensor(20, 19, false, false)
-
-JoystickButton joystickP2Button = JoystickButton(4, 5, false, false, 0);
+JoystickSensor joystickP2Direction = JoystickSensor(6,   7, true, true);
+JoystickSensor joystickP3Direction = JoystickSensor(17, 18, true, true)
+JoystickSensor joystickP4Direction = JoystickSensor( 9, 10, true, true)
 
 
+JoystickButton joystickP2Button = JoystickButton( 4,  5, false, false, 0);
+JoystickButton joystickP3Button = JoystickButton(15, 16, false, false, 0);
+JoystickButton joystickP4Button = JoystickButton( 8,  3, false, false, 0);
+
+typedef struct JoystickType {
+    uint8_t idPlayer;       // ID del dispositivo que envía (ej: 1, 2, 3)
+    boolean isLeftSide;  // Algún valor de ejemplo    
+    
+    boolean isPressUp;  
+    boolean isPressDown;
+    
+    uint16_t direction;
+
+    int posX;
+    int posY;
+  };
+
+  int countMessage = 0;
+  typedef struct struct_message {
+    uint16_t num_message;
+    JoystickType joystickButtons[4];
+  } struct_message;
 
 
-int countMessage = 0;
-typedef struct struct_message {
-    int idPlayer;       // ID del dispositivo que envía (ej: 1, 2, 3)
-    boolean isLeftSide;  // Algún valor de ejemplo
-    boolean isUpSide;  // Algún valor de ejemplo
-    int value1;
-    int value2;
-    int num_message;
-} struct_message;
-
-/*
-typedef struct struct_message
-{
-  int but_status;
-} struct_message;
-*/
 struct_message myData;
 struct_message incomingReadings;
 esp_now_peer_info_t peerInfo;
+
+//Print Message
+void printMessage(struct_message incomingReadings, int len){
+  Serial.print("count: ");
+  Serial.print(incomingReadings.num_message);
+  Serial.print("\t,direction: ");
+  Serial.print(incomingReadings.joystickButtons[1].direction);
+  Serial.print("\t,posX: ");
+  Serial.print(incomingReadings.joystickButtons[1].posX);
+  Serial.print("\t,posY: ");
+  Serial.print(incomingReadings.joystickButtons[1].posY);
+  Serial.print("\t,idPlayer: ");
+  Serial.print(incomingReadings.joystickButtons[1].idPlayer);
+  Serial.print("\t,isLeftSide ");
+  Serial.print(incomingReadings.joystickButtons[1].isLeftSide);
+  Serial.print("\t,isPressUp: ");
+  Serial.print(incomingReadings.joystickButtons[1].isPressUp);
+  Serial.print("\t,isPressDown: ");
+  Serial.print(incomingReadings.joystickButtons[1].isPressDown);
+  
+  Serial.print("\t,Bytes received: ");
+  Serial.println(len);
+  //digitalWrite(LED, incomingLED_status);
+
+}
 
 // callback when data is sent
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
@@ -80,16 +120,17 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
 void OnDataRecv(const esp_now_recv_info * info, const uint8_t *incomingData, int len) {
   const uint8_t * mac_addr = info->des_addr; // O info->des_addr
   memcpy(&incomingReadings, incomingData, sizeof(incomingReadings));
-  Serial.print("count: ");
-  Serial.print(incomingReadings.num_message);
-  Serial.print(" ,value 1: ");
-  Serial.print(incomingReadings.value1);
-  Serial.print(" ,value 2: ");
-  Serial.print(incomingReadings.value2);
-  Serial.print(" ,Bytes received: ");
-  Serial.println(len);
-  //digitalWrite(LED, incomingLED_status);
-
+  
+  //printMessage(incomingReadings, len);
+  for(int i = 0; i<5; i++){
+    if(incomingReadings.joystickButtons[i].idPlayer == DEVICE_ID){
+        int posX = incomingReadings.joystickButtons[i].posX;
+        int posY = incomingReadings.joystickButtons[i].posY;
+        int direction = incomingReadings.joystickButtons[i].direction;
+        joystickP2Direction.press(posX, posY, false);
+        joystickP2Button.pressButton(direction, false);
+    }
+  }
 }
 
 void setup() {
@@ -130,10 +171,15 @@ void setup() {
 
   joystickP2Direction.init(gamepad);
   joystickP2Direction.setCallback(callbackDetectMovementJoystick);
+  joystickP3Direction.init(gamepad);
+  joystickP3Direction.init(gamepad);
+
   joystickP2Button.init(gamepad);
   joystickP2Button.setCallbackDirection(callbackDetectButtonsJoystick);
+  joystickP3Button.init(gamepad);
+  joystickP4Button.init(gamepad);
 
-
+  myData = {};
   // Set device as a Wi-Fi Station
   WiFi.mode(WIFI_STA);
 
@@ -163,7 +209,7 @@ void setup() {
   Serial.println("Broadcast registrado.");
 
 
-  #ifndef PLAYER_2_ENABLED
+  #ifndef DEVICE_2_ENABLED
     memcpy(peerInfo.peer_addr, MAC_P2, 6);
     if (esp_now_add_peer(&peerInfo) != ESP_OK){
       Serial.println("Fallo al añadir peer P2");
@@ -172,7 +218,7 @@ void setup() {
     Serial.println("Peer P2 registrado.");
   #endif
 
-  #ifndef PLAYER_3_ENABLED
+  #ifndef DEVICE_3_ENABLED
     memcpy(peerInfo.peer_addr, MAC_P3, 6);
     if (esp_now_add_peer(&peerInfo) != ESP_OK){
       Serial.println("Fallo al añadir peer P3");
@@ -180,6 +226,15 @@ void setup() {
     }
     Serial.println("Peer P3 registrado.");
   #endif
+
+  //DATA INIT
+  myData.joystickButtons[1].idPlayer = 3;
+  myData.joystickButtons[1].isLeftSide  = true;
+  myData.joystickButtons[1].isPressUp   = false;
+  myData.joystickButtons[1].isPressDown = false;
+  myData.joystickButtons[1].direction = 0;
+  myData.joystickButtons[1].posX = 0;
+  myData.joystickButtons[1].posY = 0;
   
 }
 
@@ -189,17 +244,11 @@ void callbackDetectMovementJoystick(int positionX, int positionY) {
   Serial.print(positionX);
   Serial.print(" ,pos Y: ");
   Serial.println(positionY); 
-  
-  //sendDataToPeer(MAC_P3);
-  //sendMessage();
-  
-  //Serial.printf("Heap libre: %d bytes\n", ESP.getFreeHeap());
 
-  myData.idPlayer = 2;
-  myData.isLeftSide = true;
-  myData.isUpSide = true;
-  myData.value1 = positionX;
-  myData.value2 = positionY;
+  //DATA INIT
+  //myData.joystickButtons[1].direction = 0;
+  myData.joystickButtons[1].posX = positionX;
+  myData.joystickButtons[1].posY = positionY;
 
   sendTestMessage();
   delay(1);//TODO: increase to 10 and put the delay do it with a counter time instead of delay()
@@ -215,12 +264,10 @@ void callbackDetectButtonsJoystick(int direction, boolean isPressed){
   //sendDataToPeer(MAC_P3);
   //Serial.printf("Heap libre: %d bytes\n", ESP.getFreeHeap());
 
-  myData.idPlayer = 2;
-  myData.isLeftSide = true;
-  myData.isUpSide = true;
-  myData.value1 = direction;
-  myData.value2 = isPressed;
+  myData.joystickButtons[1].direction = direction;
+
   sendTestMessage();
+
   delay(1);
 }
 
@@ -238,7 +285,7 @@ void OnVibrateEvent(XboxGamepadOutputReportData data)
 
 void joystickDirectionDetect(){
   if(compositeHID.isConnected()){
-    joystickP2Direction.detectAndPress();
+    joystickP2Direction.detectAndPress(true);
   }
   delay(1);
 }
@@ -246,40 +293,16 @@ void joystickDirectionDetect(){
  
 void joysticksButtonsDetect(){
   if(compositeHID.isConnected()){
-    joystickP2Button.detectAndPress();
+    joystickP2Button.detectAndPress(true);
   }
   delay(1);
 }
-
-void sendMessage(){
-  /*char data[32];
-  snprintf(data, sizeof(data), "Hello, World! #%lu", msg_count++);
-
-  Serial.printf("Broadcasting message: %s\n", data);
-
-  if (!broadcast_peer.send_message((uint8_t *)data, sizeof(data))) {
-    Serial.println("Failed to broadcast message");
-  }*/
-}
-
-/*
-//PRESS GAMEPAD JOYSTICK BUTTONS
-void pressButtonsJoystickManager(int row, int col){
-  if (gamepadButtonsJoystickPressed[row][col] == false){
-
-    sendMessage();
-    
-    pressButtonsJoystick(row, col);
-    gamepadButtonsJoystickPressed[row][col] = true;
-  }
-}
-*/
 
 void sendTestMessage(){
   myData.num_message = countMessage;
   esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &myData, sizeof(myData)); // declaration
   if (result == ESP_OK) {
-    Serial.println("Proccess sent successfull");
+    //Serial.println("Proccess sent successfull");
   }else{
     Serial.println("Error sending the data");
   }
@@ -287,18 +310,52 @@ void sendTestMessage(){
 }
 
 void loop() {
+
+
+  #ifdef DEVICE_2_ENABLED
+  int currentMillis = millis();
+  if(  (currentMillis-lastTimeCheckMillis) > 20){
+
+    //joystickDirectionDetect();
+    //joysticksButtonsDetect();
+    
+    int direction = joystickP2Button.detectDirecction();
+    int x = joystickP2Direction.readX();
+    int y = joystickP2Direction.readY();
+    
+    joystickP2Direction.press(x, y, false);
+    delay(1);
+    joystickP2Button.pressButton(direction, false);
+    delay(1);
+    myData.joystickButtons[1].idPlayer = 3;
+    myData.joystickButtons[1].isLeftSide  = true;
+    myData.joystickButtons[1].isPressUp   = false;
+    myData.joystickButtons[1].isPressDown = false;
+    myData.joystickButtons[1].direction = direction;
+    myData.joystickButtons[1].posX = x;
+    myData.joystickButtons[1].posY = y;
+    sendTestMessage();
+    lastTimeCheckMillis = currentMillis;
+
+
+
+    //Serial.print("Current Millis: ");
+    //Serial.println(lastTimeCheckMillis);
   
-  //joystickDirection1();
-  //int startLoop = millis();
-  //keyboardDetection();
-  joystickDirectionDetect();
-  delay(1);
-  joysticksButtonsDetect();
-  delay(1);
+    lastTimeCheckMillis = currentMillis;
+  }
+    
+  #endif
+  
+
+  
+
+  
+
   //Serial.print("Peers count: ");
   //Serial.println(countPeers());
 
-  delay(10);
+  
   
   /*
   int delayLoop = millis() - startLoop;

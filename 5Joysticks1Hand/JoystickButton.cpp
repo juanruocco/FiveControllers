@@ -14,35 +14,39 @@ void JoystickButton::setCallbackDirection(CallbackFunctionWithArg callbackDirect
   _callbackDirection = callbackDirection; // Guarda el puntero
 }
 
-void JoystickButton::detectAndPress(){
+void JoystickButton::detectAndPress(boolean callback){
     int direction = detectDirecction();
+    pressButton(direction, callback);
+}
+
+void JoystickButton::pressButton(int direction, boolean callback){
     if (direction == 0){
-        releaseAllButtons();
+        releaseAllButtons(callback);
     }else{
-        pressButtonsJoystickManager(direction);
+        pressButtonsJoystickManager(direction, callback);
     }
 }
 
-void JoystickButton::pressButtonsJoystickManager(int direction){
+void JoystickButton::pressButtonsJoystickManager(int direction, boolean callback){
   if (directionPressed[direction] == false){
-    pressButtonsJoystick(direction);
+    pressButtonsJoystick(direction, callback);
     directionPressed[direction] = true;
   }
 }
 
-void JoystickButton::releaseAllButtons(){
+void JoystickButton::releaseAllButtons(boolean callback){
 
   for(int i = 1 ; i < 10; i++){
-    releaseButtonsJoystickManager(i);
+    releaseButtonsJoystickManager(i, callback);
   }
   //gamepad->sendGamepadReport();
 
 }
 
-void JoystickButton::releaseButtonsJoystickManager(int direction){
+void JoystickButton::releaseButtonsJoystickManager(int direction, boolean callback){
   if (directionPressed[direction] == true){
 
-    if (_callbackDirection != NULL) {
+    if (_callbackDirection != NULL && callback) {
       _callbackDirection(direction, false); // ¡Aquí se ejecuta la función del .ino y recibe los valores!
     } //else { //Serial.println("Libreria: No hay función de callback configurada.");}
 
@@ -56,7 +60,7 @@ void JoystickButton::releaseButtonsJoystickManager(int direction){
 }
 
 
-void JoystickButton::pressButtonsJoystick(int direction){
+void JoystickButton::pressButtonsJoystick(int direction, boolean callback){
   
   Serial.print("PRESS    DIREC: ");
   Serial.print(direction);
@@ -65,7 +69,7 @@ void JoystickButton::pressButtonsJoystick(int direction){
   Serial.print(" ,Code Button: ");
   Serial.println(gamepadButtonsJoystick[buttonSide][direction]);
   
-  if (_callbackDirection != NULL) {
+  if (_callbackDirection != NULL && callback) {
       _callbackDirection(direction, true); // ¡Aquí se ejecuta la función del .ino y recibe los valores!
   } //else { //Serial.println("Libreria: No hay función de callback configurada.");}
 

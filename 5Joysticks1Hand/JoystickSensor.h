@@ -10,7 +10,7 @@ const int thresholdError = 400;//TODO: check if reduce this threshold to more pr
 const int range = 32767;  // output range of X or Y movement
 
 const int distanceToAvoidCallback = 3000;  // output range of X or Y movement
-const int maxTimeToAvoidCallback = 500;
+const int maxTimeToAvoidCallback = 5000;
 
 typedef void (*CallbackFunctionWithArgs)(int x, int y);
 
@@ -44,7 +44,8 @@ class JoystickSensor {
 
     int readX();
     int readY();    
-    void detectAndPress();
+    void detectAndPress(boolean callback);
+    void press(int xPosition, int yPosition, boolean callback);
 
 };
 

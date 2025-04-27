@@ -34,15 +34,15 @@ int JoystickSensor::readY(){
   return readAxis(pinY, inverseYDirection, centerYCalibration);
 }
 
-void JoystickSensor::detectAndPress(boolean callback){
+void JoystickSensor::detectAndPress(boolean isLeftSide, boolean callback){
 
   int xPosition = readX();
   int yPosition = readY();
-  press(xPosition, yPosition, callback);
+  press(xPosition, yPosition, isLeftSide,callback);
 
 }
 
-void JoystickSensor::press(int xPosition, int yPosition, boolean callback){
+void JoystickSensor::press(int xPosition, int yPosition, boolean isLeftSide, boolean callback){
   
   boolean lastValueIsDiferent = lastPositionX != xPosition || lastPositionY != yPosition;
   boolean positionDiferenceIsBigToCallback = abs(xPosition-lastPositionX)>distanceToAvoidCallback || abs(yPosition-lastPositionY)>distanceToAvoidCallback || (xPosition == 0 && yPosition == 0);
@@ -54,7 +54,8 @@ void JoystickSensor::press(int xPosition, int yPosition, boolean callback){
       //Serial.println("Libreria: El callback del .ino terminó de ejecutarse.");
     } //else { //Serial.println("Libreria: No hay función de callback configurada.");}
 
-    gamepad->setLeftThumb (xPosition, yPosition);
+    justPress(xPosition, yPosition, isLeftSide);
+    gamepad->setLeftThumb ();
     gamepad->sendGamepadReport();
 
     lastPositionX = xPosition;
@@ -62,6 +63,15 @@ void JoystickSensor::press(int xPosition, int yPosition, boolean callback){
     lastTimeCheck = millis();
 
   }
+}
+
+void JoystickSensor::justPress(int xPosition, int yPosition, boolean isLeftSide){
+  if(isLeftSide){
+    gamepad->setLeftThumb (xPosition, yPosition);
+  }else{
+    gamepad->setRightThumb (xPosition, yPosition);
+  }
+  gamepad->sendGamepadReport();
 }
 
 int readAxis(int axis, boolean inverse, int centerCalibration) {// output: -4095 to 4095, 0 in  calibration choose default

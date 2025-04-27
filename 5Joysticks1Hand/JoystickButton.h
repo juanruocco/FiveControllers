@@ -30,15 +30,15 @@ class JoystickButton: public JoystickSensor{
   private:
     CallbackFunctionWithArg _callbackDirection = NULL;
 
-    boolean directionPressed[10] = { false };
+    boolean directionPressed[2][10] = { false };
     int buttonSide; //0 Left, 1 Rigth
     
-    void releaseAllButtons(boolean callback);
-    void pressButtonsJoystickManager(int direction, boolean callback);
+    void releaseAllButtons(boolean isLeftSide, boolean callback);
+    void pressButtonsJoystickManager(int direction, boolean isLeftSide, boolean callback);
     void directionDetected(int direction, boolean callback);
-    void pressButtonsJoystick(int direction, boolean callback);
-    void releaseButtonsJoystickManager(int direction, boolean callback);
-    void releaseButtonsJoystick(int direction);
+    void pressButtonsJoystick(int direction, boolean isLeftSide, boolean callback);
+    void releaseButtonsJoystickManager(int direction, boolean isLeftSide, boolean callback);
+    void releaseButtonsJoystick(int direction, boolean isLeftSide);
     //BleCompositeHID compositeHID;
 
   public:
@@ -48,7 +48,7 @@ class JoystickButton: public JoystickSensor{
 
     int detectDirecction();
     void detectAndPress(boolean callback);
-    void pressButton(int direction, boolean callback);
+    void pressButton(int direction, boolean isLeftSide, boolean callback);
     
 };
 

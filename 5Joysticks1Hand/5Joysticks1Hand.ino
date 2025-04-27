@@ -1,7 +1,10 @@
 //#include <Arduino.h>
-//#define DEVICE_2_ENABLED //18
-#define DEVICE_3_ENABLED   //17 
-//#define DEVICE_4_ENABLED
+
+#define DEVICE_4_ENABLED   
+
+//#define DEVICE_2_ENABLED //18 Port
+//#define DEVICE_3_ENABLED //17 Port
+//#define DEVICE_4_ENABLED //16 Port
 
 
 #ifdef DEVICE_2_ENABLED
@@ -53,14 +56,19 @@ BleCompositeHID compositeHID("P4f", "P4f", 28);
 
 //JOYSTICK VARIABLES
 
-JoystickSensor joystickP2Direction = JoystickSensor(6,   7, true, true);
-JoystickSensor joystickP3Direction = JoystickSensor(17, 18, true, true);
-JoystickSensor joystickP4Direction = JoystickSensor( 9, 10, true, true);
-
-
 JoystickButton joystickP2Button = JoystickButton( 4,  5, false, false, 0);
 JoystickButton joystickP3Button = JoystickButton(15, 16, false, false, 0);
 JoystickButton joystickP4Button = JoystickButton( 8,  3, false, false, 0);
+
+#ifdef DEVICE_4_ENABLED
+JoystickSensor  joystickP2Direction = JoystickSensor(6,   7, true, false);
+JoystickSensor  joystickP3Direction = JoystickSensor(17, 18, true, false);
+JoystickSensor  joystickP4Direction = JoystickSensor( 9, 10, true, false);
+#else
+JoystickSensor joystickP2Direction = JoystickSensor(6,   7, true, true);
+JoystickSensor joystickP3Direction = JoystickSensor(17, 18, true, true);
+JoystickSensor joystickP4Direction = JoystickSensor( 9, 10, true, true);
+#endif
 
 typedef struct JoystickType {
     uint8_t idPlayer;       // ID del dispositivo que envía (ej: 1, 2, 3)
@@ -78,7 +86,7 @@ typedef struct JoystickType {
   int countMessage = 0;
   typedef struct struct_message {
     uint16_t num_message;
-    JoystickType joystickButtons[4];
+    JoystickType joystickButtons[5];
   } struct_message;
 
 
@@ -135,8 +143,9 @@ void OnDataRecv(const esp_now_recv_info * info, const uint8_t *incomingData, int
         int posX = incomingReadings.joystickButtons[i].posX;
         int posY = incomingReadings.joystickButtons[i].posY;
         int direction = incomingReadings.joystickButtons[i].direction;
-        joystickP2Direction.press(posX, posY, false);
-        joystickP2Button.pressButton(direction, false);
+        boolean isLeftSide = incomingReadings.joystickButtons[i].isLeftSide;
+        joystickP2Direction.justPress(posX, posY, isLeftSide);
+        joystickP2Button.pressButton(direction, isLeftSide, false);
     }
   }
 }
@@ -178,12 +187,12 @@ void setup() {
   gamepad->sendGamepadReport();
 
   joystickP2Direction.init(gamepad);
-  joystickP2Direction.setCallback(callbackDetectMovementJoystick);
+  //joystickP2Direction.setCallback(callbackDetectMovementJoystick);
   joystickP3Direction.init(gamepad);
   joystickP4Direction.init(gamepad);
 
   joystickP2Button.init(gamepad);
-  joystickP2Button.setCallbackDirection(callbackDetectButtonsJoystick);
+  //joystickP2Button.setCallbackDirection(callbackDetectButtonsJoystick);
   joystickP3Button.init(gamepad);
   joystickP4Button.init(gamepad);
 
@@ -293,7 +302,7 @@ void OnVibrateEvent(XboxGamepadOutputReportData data)
 
 void joystickDirectionDetect(){
   if(compositeHID.isConnected()){
-    joystickP2Direction.detectAndPress(true);
+    joystickP2Direction.detectAndPress(true, true);
   }
   delay(1);
 }
@@ -320,62 +329,73 @@ void sendTestMessage(){
 void loop() {
 
 
-  #ifdef DEVICE_2_ENABLED
-  int currentMillis = millis();
-  if(  (currentMillis-lastTimeCheckMillis) > 20){
+  if (DEVICE_ID == 2|| DEVICE_ID == 4){
 
-    //joystickDirectionDetect();
-    //joysticksButtonsDetect();
-    
-    int direction2 = joystickP2Button.detectDirecction();
-    int x2 = joystickP2Direction.readX();
-    int y2 = joystickP2Direction.readY();
-    joystickP2Direction.press(x2, y2, false);
-    delay(1);
-    joystickP2Button.pressButton(direction2, false);
-    delay(1);
+    int currentMillis = millis();
+    if(  (currentMillis-lastTimeCheckMillis) > 20){
 
-    int direction3 = joystickP3Button.detectDirecction();
-    int x3 = joystickP3Direction.readX();
-    int y3 = joystickP3Direction.readY();
-    myData.joystickButtons[1].idPlayer = 3;
-    myData.joystickButtons[1].isLeftSide  = true;
-    myData.joystickButtons[1].isPressUp   = false;
-    myData.joystickButtons[1].isPressDown = false;
-    myData.joystickButtons[1].direction = direction3;
-    myData.joystickButtons[1].posX = x3;
-    myData.joystickButtons[1].posY = y3;
+      //joystickDirectionDetect();
+      //joysticksButtonsDetect();
+      
+      //Second Finger
+      int direction2 = joystickP2Button.detectDirecction();
+      int x2 = joystickP2Direction.readX();
+      int y2 = joystickP2Direction.readY();
+      if(DEVICE_ID == 2){
+        joystickP2Direction.justPress(x2, y2, true);
+        delay(1);
+        joystickP2Button.pressButton(direction2, true, false);
+        delay(1);
+      }else{
+        myData.joystickButtons[1].idPlayer = 2;
+        myData.joystickButtons[1].isLeftSide  = false;
+        myData.joystickButtons[1].direction = direction2;
+        myData.joystickButtons[1].posX = x2;
+        myData.joystickButtons[1].posY = y2;
+      }
+      
+      //Third Finger
+      int direction3 = joystickP3Button.detectDirecction();
+      int x3 = joystickP3Direction.readX();
+      int y3 = joystickP3Direction.readY();
+      myData.joystickButtons[2].idPlayer = 3;
+      myData.joystickButtons[2].isLeftSide  = true;
+      if(DEVICE_ID == 4){
+        myData.joystickButtons[2].isLeftSide  = false;
+      }
+      myData.joystickButtons[2].direction = direction3;
+      myData.joystickButtons[2].posX = x3;
+      myData.joystickButtons[2].posY = y3;
 
-    int direction4 = joystickP4Button.detectDirecction();
-    int x4 = joystickP4Direction.readX();
-    int y4 = joystickP4Direction.readY();
-    myData.joystickButtons[2].idPlayer = 4;
-    myData.joystickButtons[2].isLeftSide  = true;
-    myData.joystickButtons[2].isPressUp   = false;
-    myData.joystickButtons[2].isPressDown = false;
-    myData.joystickButtons[2].direction = direction4;
-    myData.joystickButtons[2].posX = x4;
-    myData.joystickButtons[2].posY = y4;
+      //Four Finger
+      int direction4 = joystickP4Button.detectDirecction();
+      int x4 = joystickP4Direction.readX();
+      int y4 = joystickP4Direction.readY();
+      if(DEVICE_ID == 2){
+        myData.joystickButtons[3].idPlayer = 4;
+        myData.joystickButtons[3].isLeftSide  = true;
+        myData.joystickButtons[3].direction = direction4;
+        myData.joystickButtons[3].posX = x4;
+        myData.joystickButtons[3].posY = y4;
+      }else{//DEVICE_ID == 4
+        joystickP4Direction.justPress(x4, y4, false);
+        delay(1);
+        joystickP4Button.pressButton(direction4, false, false);
+        delay(1);
+      }
+      
 
-    sendTestMessage();
-    
-    //Serial.print("Current Millis: ");
-    //Serial.println(lastTimeCheckMillis); 
-    lastTimeCheckMillis = currentMillis;
+      sendTestMessage();
+      
+      //Serial.print("Current Millis: ");
+      //Serial.println(lastTimeCheckMillis); 
+      lastTimeCheckMillis = currentMillis;
+    }
   }
-    
-  #endif
   
-
-  
-
-  
-
   //Serial.print("Peers count: ");
   //Serial.println(countPeers());
 
-  
-  
   /*
   int delayLoop = millis() - startLoop;
 

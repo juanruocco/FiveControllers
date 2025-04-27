@@ -16,42 +16,49 @@ void JoystickButton::setCallbackDirection(CallbackFunctionWithArg callbackDirect
 
 void JoystickButton::detectAndPress(boolean callback){
     int direction = detectDirecction();
-    pressButton(direction, callback);
+    boolean isLeftSide = false;
+    if(buttonSide == 1) isLeftSide = true;
+    pressButton(direction, isLeftSide, callback);
 }
 
-void JoystickButton::pressButton(int direction, boolean callback){
+void JoystickButton::pressButton(int direction, boolean isLeftSide, boolean callback){
     if (direction == 0){
-        releaseAllButtons(callback);
+        releaseAllButtons(isLeftSide, callback);
     }else{
-        pressButtonsJoystickManager(direction, callback);
+        pressButtonsJoystickManager(direction, isLeftSide, callback);
     }
 }
 
-void JoystickButton::pressButtonsJoystickManager(int direction, boolean callback){
-  if (directionPressed[direction] == false){
-    pressButtonsJoystick(direction, callback);
-    directionPressed[direction] = true;
+void JoystickButton::pressButtonsJoystickManager(int direction, boolean isLeftSide, boolean callback){
+  int rowDirection = 0;
+  if(!isLeftSide) rowDirection = 1;
+  
+  if (directionPressed[rowDirection][direction] == false){
+    pressButtonsJoystick(direction ,isLeftSide ,callback);
+    directionPressed[rowDirection][direction] = true;
   }
 }
 
-void JoystickButton::releaseAllButtons(boolean callback){
+void JoystickButton::releaseAllButtons(boolean isLeftSide, boolean callback){
 
   for(int i = 1 ; i < 10; i++){
-    releaseButtonsJoystickManager(i, callback);
+    releaseButtonsJoystickManager(i, isLeftSide, callback);
   }
   //gamepad->sendGamepadReport();
 
 }
 
-void JoystickButton::releaseButtonsJoystickManager(int direction, boolean callback){
-  if (directionPressed[direction] == true){
+void JoystickButton::releaseButtonsJoystickManager(int direction, boolean isLeftSide, boolean callback){
+  int rowDirection = 0;
+  if(!isLeftSide) rowDirection = 1;
+  if (directionPressed[rowDirection][direction] == true){
 
     if (_callbackDirection != NULL && callback) {
       _callbackDirection(direction, false); // ¡Aquí se ejecuta la función del .ino y recibe los valores!
     } //else { //Serial.println("Libreria: No hay función de callback configurada.");}
 
-    releaseButtonsJoystick( direction);
-    directionPressed[direction] = false;
+    releaseButtonsJoystick( direction, isLeftSide);
+    directionPressed[rowDirection][direction] = false;
     Serial.print("RELEASE  DIREC: ");
     Serial.print(direction);
     Serial.print(", Button Side: ");
@@ -60,54 +67,60 @@ void JoystickButton::releaseButtonsJoystickManager(int direction, boolean callba
 }
 
 
-void JoystickButton::pressButtonsJoystick(int direction, boolean callback){
-  
+void JoystickButton::pressButtonsJoystick(int direction, boolean isLeftSide, boolean callback){
+  int rowDirection = 0;
+  if(!isLeftSide) rowDirection = 1;
+
   Serial.print("PRESS    DIREC: ");
   Serial.print(direction);
   Serial.print(", Button Side: ");
   Serial.print(buttonSide);
   Serial.print(" ,Code Button: ");
-  Serial.println(gamepadButtonsJoystick[buttonSide][direction]);
+  Serial.println(gamepadButtonsJoystick[rowDirection][direction]);
   
   if (_callbackDirection != NULL && callback) {
       _callbackDirection(direction, true); // ¡Aquí se ejecuta la función del .ino y recibe los valores!
   } //else { //Serial.println("Libreria: No hay función de callback configurada.");}
 
-  if( gamepadButtonsJoystick[buttonSide][direction] == NORTH_DIRE ){
+  if( gamepadButtonsJoystick[rowDirection][direction] == NORTH_DIRE ){
     gamepad->pressDPadDirectionFlag(XboxDpadFlags::NORTH);
-  }else if(gamepadButtonsJoystick[buttonSide][direction] == SOUTH_DIRE){
+  }else if(gamepadButtonsJoystick[rowDirection][direction] == SOUTH_DIRE){
     gamepad->pressDPadDirectionFlag(XboxDpadFlags::SOUTH);
-  }else if(gamepadButtonsJoystick[buttonSide][direction] == WEST_DIRE){
+  }else if(gamepadButtonsJoystick[rowDirection][direction] == WEST_DIRE){
     gamepad->pressDPadDirectionFlag(XboxDpadFlags::WEST);
-  }else if(gamepadButtonsJoystick[buttonSide][direction] == EAST_DIRE){
+  }else if(gamepadButtonsJoystick[rowDirection][direction] == EAST_DIRE){
     gamepad->pressDPadDirectionFlag(XboxDpadFlags::EAST);
-  }else if(gamepadButtonsJoystick[buttonSide][direction] == TRIGER_LEFT){
+  }else if(gamepadButtonsJoystick[rowDirection][direction] == TRIGER_LEFT){
     gamepad-> setLeftTrigger(30000);
-  }else if(gamepadButtonsJoystick[buttonSide][direction] == TRIGER_RIGHT){
+  //RIGTH SIDE
+  }else if(gamepadButtonsJoystick[rowDirection][direction] == TRIGER_RIGHT){
     gamepad-> setRightTrigger(30000);
   }else{
-    gamepad->press(gamepadButtonsJoystick[buttonSide][direction]);
+    gamepad->press(gamepadButtonsJoystick[rowDirection][direction]);
   }
   
   gamepad->sendGamepadReport();
 
 }  
 
-void JoystickButton::releaseButtonsJoystick(int direction){
+void JoystickButton::releaseButtonsJoystick(int direction, boolean isLeftSide){
 
   //Serial.print("release: ");
   //Serial.println(gamepadButtonsJoystick[buttonSide][direction]);
-  if( gamepadButtonsJoystick[buttonSide][direction] == NORTH_DIRE || gamepadButtonsJoystick[buttonSide][direction] == SOUTH_DIRE || gamepadButtonsJoystick[buttonSide][direction] == WEST_DIRE  || gamepadButtonsJoystick[buttonSide][direction] == EAST_DIRE){
+  int rowDirection = 0;
+  if(!isLeftSide) rowDirection = 1;
+
+  if( gamepadButtonsJoystick[rowDirection][direction] == NORTH_DIRE || gamepadButtonsJoystick[rowDirection][direction] == SOUTH_DIRE || gamepadButtonsJoystick[rowDirection][direction] == WEST_DIRE  || gamepadButtonsJoystick[rowDirection][direction] == EAST_DIRE){
     gamepad  -> releaseDPad();
     //Serial.print("release DPad ");
-  }else if(gamepadButtonsJoystick[buttonSide][direction] == TRIGER_LEFT){  
+  }else if(gamepadButtonsJoystick[rowDirection][direction] == TRIGER_LEFT){  
       gamepad  -> setLeftTrigger(0);
       gamepad  -> setRightTrigger(0);
-  }else if(gamepadButtonsJoystick[buttonSide][direction] == TRIGER_RIGHT){  
+  }else if(gamepadButtonsJoystick[rowDirection][direction] == TRIGER_RIGHT){  
       gamepad  -> setLeftTrigger(0);
       gamepad  -> setRightTrigger(0);
   }else{
-    gamepad->release(gamepadButtonsJoystick[buttonSide][direction]);
+    gamepad->release(gamepadButtonsJoystick[rowDirection][direction]);
     //Serial.println("release gamepad buttons ");
   }
   gamepad->sendGamepadReport();

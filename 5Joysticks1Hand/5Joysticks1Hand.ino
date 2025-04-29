@@ -1,6 +1,19 @@
 //#include <Arduino.h>
+//ESP LIBRARIES
+//#include <esp_now.h>
+//#include <WiFi.h>
 
-#define DEVICE_2_ENABLED   
+#include <BleConnectionStatus.h>
+#include <BleCompositeHID.h>
+#include <XboxGamepadDevice.h>
+
+#include "JoystickButton.h"
+
+//I2C
+#include <Wire.h>
+
+
+#define DEVICE_3_ENABLED   
 
 //#define DEVICE_2_ENABLED //18 Port
 //#define DEVICE_3_ENABLED //17 Port
@@ -19,22 +32,22 @@
 #define DEVICE_ID 4
 #endif
 
+const int I2C_SDA = 20;
+const int I2C_SCL = 19;
+volatile bool newDataReceived = false; 
+
+
 uint8_t MAC_P2[] = {0x64, 0xE8, 0x33, 0x7E, 0x04, 0x3C};  
+#define SLAVE_ADDRESS_P3 0x10
+#define SLAVE_ADDRESS_P4 0x11
+
 uint8_t MAC_P3[] = {0xA0, 0x85, 0xE3, 0xE7, 0x44, 0x28};  
 uint8_t MAC_P4[] = {0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC}; 
 uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 const int WIFI_CHANNEL = 4;
 bool incomingLED_status;
 
-//ESP LIBRARIES
-#include <esp_now.h>
-#include <WiFi.h>
 
-#include <BleConnectionStatus.h>
-#include <BleCompositeHID.h>
-#include <XboxGamepadDevice.h>
-
-#include "JoystickButton.h"
 
 int lastTimeCheckMillis = 0;
 
@@ -71,28 +84,28 @@ JoystickSensor joystickP4Direction = JoystickSensor( 9, 10, true, true);
 #endif
 
 typedef struct JoystickType {
-    uint8_t idPlayer;       // ID del dispositivo que envía (ej: 1, 2, 3)
-    boolean isLeftSide;  // Algún valor de ejemplo    
-    
-    boolean isPressUp;  
-    boolean isPressDown;
-    
-    uint16_t direction;
+  uint8_t idPlayer;       // ID del dispositivo que envía (ej: 1, 2, 3)
+  boolean isLeftSide;  // Algún valor de ejemplo    
+  
+  boolean isPressUp;  
+  boolean isPressDown;
+  
+  uint16_t direction;
 
-    int posX;
-    int posY;
-  };
+  int posX;
+  int posY;
+};
 
-  int countMessage = 0;
-  typedef struct struct_message {
-    uint16_t num_message;
-    JoystickType joystickButtons[5];
-  } struct_message;
+int countMessage = 0;
+typedef struct struct_message {
+  uint16_t num_message;
+  JoystickType joystickButtons[5];
+} struct_message;
 
 
 struct_message myData;
 struct_message incomingReadings;
-esp_now_peer_info_t peerInfo;
+//esp_now_peer_info_t peerInfo;
 
 //Print Message
 void printMessage(struct_message incomingReadings, int len){
@@ -120,34 +133,12 @@ void printMessage(struct_message incomingReadings, int len){
     */
   }
   
-  
   //Serial.print("\t,Bytes received: ");
   //Serial.println(len);
 
 }
 
-// callback when data is sent
-void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
-  //Serial.print("\r\nLast Packet Send Status:\t");
-  //Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
-}
 
-void OnDataRecv(const esp_now_recv_info * info, const uint8_t *incomingData, int len) {
-  const uint8_t * mac_addr = info->des_addr; // O info->des_addr
-  memcpy(&incomingReadings, incomingData, sizeof(incomingReadings));
-  
-  printMessage(incomingReadings, len);
-  for(int i = 0; i<5; i++){
-    if(incomingReadings.joystickButtons[i].idPlayer == DEVICE_ID){
-        int posX = incomingReadings.joystickButtons[i].posX;
-        int posY = incomingReadings.joystickButtons[i].posY;
-        int direction = incomingReadings.joystickButtons[i].direction;
-        boolean isLeftSide = incomingReadings.joystickButtons[i].isLeftSide;
-        joystickP2Direction.justPress(posX, posY, isLeftSide);
-        joystickP2Button.pressButton(direction, isLeftSide, false);
-    }
-  }
-}
 
 void setup() {
 
@@ -185,77 +176,46 @@ void setup() {
   gamepad->setRightThumb(1, 1);
   gamepad->sendGamepadReport();
 
-  joystickP2Direction.init(gamepad);
+  //joystickP2Direction.init(gamepad);
   //joystickP2Direction.setCallback(callbackDetectMovementJoystick);
-  joystickP3Direction.init(gamepad);
-  joystickP4Direction.init(gamepad);
+  //joystickP3Direction.init(gamepad);
+  //joystickP4Direction.init(gamepad);
 
-  joystickP2Button.init(gamepad);
+  //joystickP2Button.init(gamepad);
   //joystickP2Button.setCallbackDirection(callbackDetectButtonsJoystick);
-  joystickP3Button.init(gamepad);
-  joystickP4Button.init(gamepad);
+  //joystickP3Button.init(gamepad);
+  //joystickP4Button.init(gamepad);
 
   myData = {};
-  // Set device as a Wi-Fi Station
-  WiFi.mode(WIFI_STA);
-
-  WiFi.channel(WIFI_CHANNEL);
-
-  // Init ESP-NOW
-  if (esp_now_init() != ESP_OK) {
-    Serial.println("Error initializing ESP-NOW");
-    return;
-  }
-
-  // Send Callback Function
-  esp_now_register_send_cb(OnDataSent);
-
-  // Receive Callback Function
-  esp_now_register_recv_cb(OnDataRecv);
-
-  // Register peer
-  memcpy(peerInfo.peer_addr, broadcastAddress, 6);
-  //memset(peerInfo.lmk, 0, ESP_NOW_KEY_LEN);
-  peerInfo.channel = 0;
-  peerInfo.encrypt = false;
-
-  // Add peer
-  if (esp_now_add_peer(&peerInfo) != ESP_OK) {
-    Serial.println("Failed to add peer");
-    return;
-  }
-  Serial.println("Broadcast registrado.");
-
-
-  #ifndef DEVICE_2_ENABLED
-    memcpy(peerInfo.peer_addr, MAC_P2, 6);
-    if (esp_now_add_peer(&peerInfo) != ESP_OK){
-      Serial.println("Fallo al añadir peer P2");
-      return;
-    }
-    Serial.println("Peer P2 registrado.");
-  #endif
-
-  #ifndef DEVICE_3_ENABLED
-    memcpy(peerInfo.peer_addr, MAC_P3, 6);
-    if (esp_now_add_peer(&peerInfo) != ESP_OK){
-      Serial.println("Fallo al añadir peer P3");
-      return;
-    }
-    Serial.println("Peer P3 registrado.");
-  #endif
-
   //DATA INIT
-  /*myData.joystickButtons[1].idPlayer = 3;
+  myData.joystickButtons[1].idPlayer = 2;
   myData.joystickButtons[1].isLeftSide  = true;
   myData.joystickButtons[1].isPressUp   = false;
   myData.joystickButtons[1].isPressDown = false;
   myData.joystickButtons[1].direction = 0;
   myData.joystickButtons[1].posX = 0;
-  myData.joystickButtons[1].posY = 0;*/
+  myData.joystickButtons[1].posY = 0;
+
+  if(DEVICE_ID == 2){//MAestro
+    Wire.begin();
+  }else{//SLAVE P3 por ahora
+    // Inicializar el bus I2C como Esclavo con su direccion UNICA, especificando pines
+    Wire.begin(SLAVE_ADDRESS_P3);
+
+    // Registrar las funciones de evento
+    Wire.onReceive(receiveEvent); // Llama a receiveEvent cuando reciba datos del maestro
+    Wire.onRequest(requestEvent);   // Llama a requestEvent cuando el maestro pida datos a este esclavo
+
+  }
+  
+  // Wire.setClock(400000); // Opcional: mayor velocidad
+  delay(1000);
+
+  
   
 }
 
+/*
 void callbackDetectMovementJoystick(int positionX, int positionY) {
   
   Serial.print("posX:  ");
@@ -288,7 +248,7 @@ void callbackDetectButtonsJoystick(int direction, boolean isPressed){
 
   delay(1);
 }
-
+*/
 
 void OnVibrateEvent(XboxGamepadOutputReportData data)
 {
@@ -317,6 +277,7 @@ void joysticksButtonsDetect(){
 }
 
 void sendTestMessage(){
+  /*
   myData.num_message = countMessage;
   esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &myData, sizeof(myData)); // declaration
   if (result == ESP_OK) {
@@ -325,11 +286,111 @@ void sendTestMessage(){
     Serial.println("Error sending the data");
   }
   countMessage++;
+  */
+}
+
+// Funcion que se llama automaticamente cuando el maestro ENVIA datos a ESTE esclavo
+void receiveEvent(int howMany) {
+  // ¡NO HAGAS OPERACIONES LARGAS NI SERIAL.PRINT AQUI!
+
+  // Verificar si el tamaño de los datos recibidos coincide con el tamaño esperado de la estructura
+  if (howMany == sizeof(struct_message)) {
+    // !!! Leer los bytes recibidos directamente en la variable de la estructura !!!
+    // Esto es seguro si howMany coincide exactamente con sizeof(struct_message)
+    Wire.readBytes((uint8_t*)&myData, howMany);
+
+    newDataReceived = true; // Poner la bandera para procesar en el loop
+  } else {
+    // Si el tamaño no coincide, es un error o datos inesperados.
+    Serial.printf("Esclavo 1: Tamano de datos recibido inesperado: %d bytes (Esperado: %zu)\n", howMany, sizeof(struct_message));
+    // Leer y descartar el resto para limpiar el buffer de I2C
+    while (Wire.available()) {
+      Wire.read();
+    }
+  }
+}
+
+// Funcion que se llama automaticamente cuando el maestro SOLICITA datos a ESTE esclavo
+void requestEvent() {
+  // ¡Envía los datos que el maestro solicitó!
+
+  // Asegurarse de que messageToSend tenga los datos mas recientes o relevantes
+  // Puedes actualizar messageToSend justo antes de este evento si es necesario,
+  // pero es mejor tenerla actualizada continuamente en el loop o en otro lugar.
+
+  // !!! Enviar la estructura completa como un bloque de bytes !!!
+  Wire.write((uint8_t*)&myData, sizeof(myData));
 }
 
 void loop() {
 
+ if(DEVICE_ID == 2){
+    // --- Enviar la estructura completa al Esclavo 1 ---
+    Serial.printf("\nMaestro: Enviando struct (%zu bytes) al Esclavo 1 (0x%02X)...\n", sizeof(myData), SLAVE_ADDRESS_P3);
+    Wire.beginTransmission(SLAVE_ADDRESS_P3);
+    // !!! Envía la estructura completa como un bloque de bytes !!!
+    size_t bytesSent = Wire.write((uint8_t*)&myData, sizeof(myData));
+    byte end_transmission_status = Wire.endTransmission();
 
+    Serial.printf("Maestro: Se intentaron enviar %zu bytes. Resultado: %d\n", bytesSent, end_transmission_status);
+    if (end_transmission_status == 0 && bytesSent == sizeof(myData)) {
+      Serial.println("Maestro: Envio a Esclavo 1 exitoso.");
+    } else {
+      Serial.printf("Maestro: Error/Envio parcial a Esclavo 1. Codigo: %d\n", end_transmission_status);
+    }
+    delay(100);
+
+    // --- Solicitar la estructura completa del Esclavo 1 ---
+    Serial.printf("Maestro: Solicitando struct (%zu bytes) del Esclavo 1...\n", sizeof(struct_message));
+    struct_message receivedMessageS1; // Variable para recibir la estructura
+    size_t bytes_requested = sizeof(struct_message);
+    size_t bytes_received = Wire.requestFrom(SLAVE_ADDRESS_P3, bytes_requested); // Solicitar el tamaño completo
+    Serial.printf("Maestro: Se solicitaron %zu bytes, se recibieron %zu\n", bytes_requested, bytes_received);
+
+    if (bytes_received == bytes_requested) {
+      // !!! Leer los bytes recibidos directamente en la variable de la estructura !!!
+      Wire.readBytes((uint8_t*)&receivedMessageS1, bytes_received);
+      Serial.println("Maestro: Struct recibida de Esclavo 1.");
+      // Opcional: Imprimir algun dato para verificar
+      Serial.printf("  Recibido S1 - num_message: %u\n", receivedMessageS1.num_message);
+      Serial.printf("  Recibido S1 - joystickButtons[0].posX: %d\n", receivedMessageS1.joystickButtons[0].posX);
+    } else {
+      Serial.println("Maestro: Error o recepcion parcial de Esclavo 1.");
+      // Leer y descartar el resto si Wire.available() > 0 para limpiar el buffer
+      while(Wire.available()) Wire.read();
+    }
+
+    delay(1000);
+ 
+ }else if(DEVICE_ID == 3){
+    if (newDataReceived) {
+      newDataReceived = false; // Bajar la bandera
+
+      Serial.println("Esclavo 1: Procesando struct recibida.");
+      // Opcional: Imprimir algun dato para verificar
+      Serial.printf("  Recibido Esclavo 1 - num_message: %u\n", myData.num_message);
+      
+      // *** AQUI HACES LO QUE NECESITES CON LA ESTRUCTURA 'receivedMessage' ***
+      // Por ejemplo, actualizar el estado interno del esclavo, o actualizar
+      // la estructura 'messageToSend' con datos de respuesta basados en lo recibido.
+      // ***********************************************************
+
+      // Ejemplo de actualizacion de la estructura a enviar para la proxima solicitud:
+      countMessage++;
+      myData.num_message = countMessage; // Un numero de mensaje para el esclavo
+      
+
+      Serial.println("Esclavo 1: Struct a enviar actualizada.");
+    }
+
+    // El loop puede hacer otras tareas
+    delay(10);
+
+
+ }
+  
+
+  /*
   if (DEVICE_ID == 2|| DEVICE_ID == 4){
 
     int currentMillis = millis();
@@ -393,7 +454,8 @@ void loop() {
       lastTimeCheckMillis = currentMillis;
     }
   }
-  
+  */
+
   //Serial.print("Peers count: ");
   //Serial.println(countPeers());
 

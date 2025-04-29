@@ -12,8 +12,7 @@
 //I2C
 #include <Wire.h>
 
-
-#define DEVICE_3_ENABLED   
+#define DEVICE_2_ENABLED   
 
 //#define DEVICE_2_ENABLED //18 Port
 //#define DEVICE_3_ENABLED //17 Port
@@ -32,8 +31,8 @@
 #define DEVICE_ID 4
 #endif
 
-const int I2C_SDA = 20;
-const int I2C_SCL = 19;
+const int I2C_SDA = 19;
+const int I2C_SCL = 20;
 volatile bool newDataReceived = false; 
 
 
@@ -196,6 +195,7 @@ void setup() {
   myData.joystickButtons[1].posX = 0;
   myData.joystickButtons[1].posY = 0;
 
+  Wire.setPins(I2C_SDA, I2C_SCL);
   if(DEVICE_ID == 2){//MAestro
     Wire.begin();
   }else{//SLAVE P3 por ahora

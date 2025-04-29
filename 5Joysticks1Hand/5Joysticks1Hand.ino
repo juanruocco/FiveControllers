@@ -1,6 +1,6 @@
 //#include <Arduino.h>
 
-#define DEVICE_4_ENABLED   
+#define DEVICE_2_ENABLED   
 
 //#define DEVICE_2_ENABLED //18 Port
 //#define DEVICE_3_ENABLED //17 Port
@@ -23,7 +23,7 @@ uint8_t MAC_P2[] = {0x64, 0xE8, 0x33, 0x7E, 0x04, 0x3C};
 uint8_t MAC_P3[] = {0xA0, 0x85, 0xE3, 0xE7, 0x44, 0x28};  
 uint8_t MAC_P4[] = {0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC}; 
 uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-
+const int WIFI_CHANNEL = 4;
 bool incomingLED_status;
 
 //ESP LIBRARIES
@@ -97,10 +97,10 @@ esp_now_peer_info_t peerInfo;
 //Print Message
 void printMessage(struct_message incomingReadings, int len){
   
-  Serial.print("count: ");
-  Serial.print(incomingReadings.num_message);      
+  //Serial.print("count: ");
+  //Serial.print(incomingReadings.num_message);      
 
-  for(int i = 1; i<4 ; i++){
+  for(int i = 1; i<1 ; i++){
     Serial.print("\t,id: ");
     Serial.print(incomingReadings.joystickButtons[i].idPlayer);
     Serial.print("\t,direc: ");
@@ -121,9 +121,8 @@ void printMessage(struct_message incomingReadings, int len){
   }
   
   
-  Serial.print("\t,Bytes received: ");
-  Serial.println(len);
-  //digitalWrite(LED, incomingLED_status);
+  //Serial.print("\t,Bytes received: ");
+  //Serial.println(len);
 
 }
 
@@ -199,6 +198,8 @@ void setup() {
   myData = {};
   // Set device as a Wi-Fi Station
   WiFi.mode(WIFI_STA);
+
+  WiFi.channel(WIFI_CHANNEL);
 
   // Init ESP-NOW
   if (esp_now_init() != ESP_OK) {
@@ -332,7 +333,7 @@ void loop() {
   if (DEVICE_ID == 2|| DEVICE_ID == 4){
 
     int currentMillis = millis();
-    if(  (currentMillis-lastTimeCheckMillis) > 20){
+    if(  (currentMillis-lastTimeCheckMillis) > 40){
 
       //joystickDirectionDetect();
       //joysticksButtonsDetect();

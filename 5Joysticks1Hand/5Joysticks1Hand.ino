@@ -1,14 +1,8 @@
-//#include <Arduino.h>
-//ESP LIBRARIES
-//#include <esp_now.h>
-//#include <WiFi.h>
-
 #include <BleConnectionStatus.h>
 #include <BleCompositeHID.h>
 #include <XboxGamepadDevice.h>
 
 #include "JoystickButton.h"
-
 //I2C
 #include <Wire.h>
 
@@ -35,18 +29,8 @@ const int I2C_SDA = 19;
 const int I2C_SCL = 20;
 volatile bool newDataReceived = false; 
 
-
-uint8_t MAC_P2[] = {0x64, 0xE8, 0x33, 0x7E, 0x04, 0x3C};  
 #define SLAVE_ADDRESS_P3 0x10
 #define SLAVE_ADDRESS_P4 0x11
-
-uint8_t MAC_P3[] = {0xA0, 0x85, 0xE3, 0xE7, 0x44, 0x28};  
-uint8_t MAC_P4[] = {0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC}; 
-uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-const int WIFI_CHANNEL = 4;
-bool incomingLED_status;
-
-
 
 int lastTimeCheckMillis = 0;
 
@@ -103,38 +87,37 @@ typedef struct struct_message {
 
 
 struct_message myData;
-struct_message incomingReadings;
+
 //esp_now_peer_info_t peerInfo;
 
 //Print Message
-void printMessage(struct_message incomingReadings, int len){
+void printMessage(struct_message data){
   
-  //Serial.print("count: ");
-  //Serial.print(incomingReadings.num_message);      
-
-  for(int i = 1; i<1 ; i++){
-    Serial.print("\t,id: ");
-    Serial.print(incomingReadings.joystickButtons[i].idPlayer);
+  for(int i = 1; i<4 ; i++){
+    Serial.print("id: ");
+    Serial.print(data.joystickButtons[i].idPlayer);
     Serial.print("\t,direc: ");
-    Serial.print(incomingReadings.joystickButtons[i].direction);
+    Serial.print(data.joystickButtons[i].direction);
     Serial.print("\t,posX: ");
-    Serial.print(incomingReadings.joystickButtons[i].posX);
+    Serial.print(data.joystickButtons[i].posX);
     Serial.print("\t,posY: ");
-    Serial.print(incomingReadings.joystickButtons[i].posY);
-    
+    Serial.print(data.joystickButtons[i].posY);
+    Serial.print("\t");
     /*
     Serial.print("\t,isLeftSide ");
-    Serial.print(incomingReadings.joystickButtons[i].isLeftSide);
+    Serial.print(data.joystickButtons[i].isLeftSide);
     Serial.print("\t,isPressUp: ");
-    Serial.print(incomingReadings.joystickButtons[i].isPressUp);
+    Serial.print(data.joystickButtons[i].isPressUp);
     Serial.print("\t,isPressDown: ");
-    Serial.print(incomingReadings.joystickButtons[i].isPressDown);
+    Serial.print(data.joystickButtons[i].isPressDown);
     */
   }
-  
+
   //Serial.print("\t,Bytes received: ");
   //Serial.println(len);
 
+  Serial.print(",count: ");
+  Serial.println(data.num_message);      
 }
 
 
@@ -143,11 +126,7 @@ void setup() {
 
   Serial.begin(115200);
   Serial.println("Starting BLE work!");
-  //Keyboard.begin();
-  //bleGamepadConfig.setControllerType(CONTROLLER_TYPE_JOYSTICK); // CONTROLLER_TYPE_JOYSTICK, CONTROLLER_TYPE_GAMEPAD (DEFAULT), CONTROLLER_TYPE_MULTI_AXIS
-  //bleGamepad.begin(&bleGamepadConfig);
-
-
+  
   XboxSeriesXControllerDeviceConfiguration* config = new XboxSeriesXControllerDeviceConfiguration();
 
   // The composite HID device pretends to be a valid Xbox controller via vendor and product IDs (VID/PID).
@@ -160,7 +139,6 @@ void setup() {
   Serial.println("Using serial number: " + String(hostConfig.getSerialNumber()));
     
   // Set up gamepad
-  //gamepad = new XboxGamepadDevice(config);
   gamepad = new XboxGamepadDevice(config);
 
   FunctionSlot<XboxGamepadOutputReportData> vibrationSlot(OnVibrateEvent);
@@ -175,15 +153,15 @@ void setup() {
   gamepad->setRightThumb(1, 1);
   gamepad->sendGamepadReport();
 
-  //joystickP2Direction.init(gamepad);
+  joystickP2Direction.init(gamepad);
   //joystickP2Direction.setCallback(callbackDetectMovementJoystick);
-  //joystickP3Direction.init(gamepad);
-  //joystickP4Direction.init(gamepad);
+  joystickP3Direction.init(gamepad);
+  joystickP4Direction.init(gamepad);
 
-  //joystickP2Button.init(gamepad);
+  joystickP2Button.init(gamepad);
   //joystickP2Button.setCallbackDirection(callbackDetectButtonsJoystick);
-  //joystickP3Button.init(gamepad);
-  //joystickP4Button.init(gamepad);
+  joystickP3Button.init(gamepad);
+  joystickP4Button.init(gamepad);
 
   myData = {};
   //DATA INIT
@@ -276,19 +254,6 @@ void joysticksButtonsDetect(){
   delay(1);
 }
 
-void sendTestMessage(){
-  /*
-  myData.num_message = countMessage;
-  esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &myData, sizeof(myData)); // declaration
-  if (result == ESP_OK) {
-    //Serial.println("Proccess sent successfull");
-  }else{
-    Serial.println("Error sending the data");
-  }
-  countMessage++;
-  */
-}
-
 // Funcion que se llama automaticamente cuando el maestro ENVIA datos a ESTE esclavo
 void receiveEvent(int howMany) {
   // ¡NO HAGAS OPERACIONES LARGAS NI SERIAL.PRINT AQUI!
@@ -322,71 +287,98 @@ void requestEvent() {
   Wire.write((uint8_t*)&myData, sizeof(myData));
 }
 
-void loop() {
-
- if(DEVICE_ID == 2){
-    // --- Enviar la estructura completa al Esclavo 1 ---
-    Serial.printf("\nMaestro: Enviando struct (%zu bytes) al Esclavo 1 (0x%02X)...\n", sizeof(myData), SLAVE_ADDRESS_P3);
-    Wire.beginTransmission(SLAVE_ADDRESS_P3);
+struct_message requestMessageSlave(int address){
+  // --- Enviar el dato al Esclavo 1 ---
+    //Serial.printf("\nMaestro: Enviando struct (%zu bytes) al Esclavo 1 (0x%02X)...\n", sizeof(myData), address);
+    Wire.beginTransmission(address);
     // !!! Envía la estructura completa como un bloque de bytes !!!
     size_t bytesSent = Wire.write((uint8_t*)&myData, sizeof(myData));
     byte end_transmission_status = Wire.endTransmission();
 
-    Serial.printf("Maestro: Se intentaron enviar %zu bytes. Resultado: %d\n", bytesSent, end_transmission_status);
+    //Serial.printf("Maestro: Se intentaron enviar %zu bytes. Resultado: %d\n", bytesSent, end_transmission_status);
     if (end_transmission_status == 0 && bytesSent == sizeof(myData)) {
-      Serial.println("Maestro: Envio a Esclavo 1 exitoso.");
+      //Serial.println("Maestro: Envio a Esclavo 1 exitoso.");
     } else {
       Serial.printf("Maestro: Error/Envio parcial a Esclavo 1. Codigo: %d\n", end_transmission_status);
     }
     delay(100);
 
     // --- Solicitar la estructura completa del Esclavo 1 ---
-    Serial.printf("Maestro: Solicitando struct (%zu bytes) del Esclavo 1...\n", sizeof(struct_message));
+    //Serial.printf("Maestro: Solicitando struct (%zu bytes) del Esclavo 1...\n", sizeof(struct_message));
     struct_message receivedMessageS1; // Variable para recibir la estructura
     size_t bytes_requested = sizeof(struct_message);
-    size_t bytes_received = Wire.requestFrom(SLAVE_ADDRESS_P3, bytes_requested); // Solicitar el tamaño completo
-    Serial.printf("Maestro: Se solicitaron %zu bytes, se recibieron %zu\n", bytes_requested, bytes_received);
+    size_t bytes_received = Wire.requestFrom(address, bytes_requested); // Solicitar el tamaño completo
+    //Serial.printf("Maestro: Se solicitaron %zu bytes, se recibieron %zu\n", bytes_requested, bytes_received);
 
     if (bytes_received == bytes_requested) {
       // !!! Leer los bytes recibidos directamente en la variable de la estructura !!!
       Wire.readBytes((uint8_t*)&receivedMessageS1, bytes_received);
-      Serial.println("Maestro: Struct recibida de Esclavo 1.");
-      // Opcional: Imprimir algun dato para verificar
-      Serial.printf("  Recibido S1 - num_message: %u\n", receivedMessageS1.num_message);
-      Serial.printf("  Recibido S1 - joystickButtons[0].posX: %d\n", receivedMessageS1.joystickButtons[0].posX);
+      //Serial.println("Maestro: Struct recibida de Esclavo 1.");
     } else {
       Serial.println("Maestro: Error o recepcion parcial de Esclavo 1.");
       // Leer y descartar el resto si Wire.available() > 0 para limpiar el buffer
       while(Wire.available()) Wire.read();
     }
+    return receivedMessageS1;
+    
+}
 
-    delay(1000);
- 
+void setDataOfSensors(boolean isLeftSide){
+  
+  countMessage++;
+  myData.num_message = countMessage;
+  
+  //Second Finger  
+  int direction2 = joystickP2Button.detectDirecction();
+  int x2 = joystickP2Direction.readX();
+  int y2 = joystickP2Direction.readY();
+  myData.joystickButtons[1].idPlayer = 2;
+  myData.joystickButtons[1].isLeftSide  = isLeftSide;
+  myData.joystickButtons[1].direction = direction2;
+  myData.joystickButtons[1].posX = x2;
+  myData.joystickButtons[1].posY = y2;
+  
+  
+  //Third Finger
+  int direction3 = joystickP3Button.detectDirecction();
+  int x3 = joystickP3Direction.readX();
+  int y3 = joystickP3Direction.readY();
+  myData.joystickButtons[2].idPlayer = 3;
+  myData.joystickButtons[2].isLeftSide  = isLeftSide;
+  myData.joystickButtons[2].direction = direction3;
+  myData.joystickButtons[2].posX = x3;
+  myData.joystickButtons[2].posY = y3;
+
+  //Four Finger
+  int direction4 = joystickP4Button.detectDirecction();
+  int x4 = joystickP4Direction.readX();
+  int y4 = joystickP4Direction.readY();
+  
+  myData.joystickButtons[3].idPlayer = 4;
+  myData.joystickButtons[3].isLeftSide  = isLeftSide;
+  myData.joystickButtons[3].direction = direction4;
+  myData.joystickButtons[3].posX = x4;
+  myData.joystickButtons[3].posY = y4;
+  
+}
+
+
+void loop() {
+
+ if(DEVICE_ID == 2){
+    setDataOfSensors(DEVICE_ID == 2);
+    struct_message messageIncome = requestMessageSlave(SLAVE_ADDRESS_P3);
+    printMessage(messageIncome);
+    delay(10);
  }else if(DEVICE_ID == 3){
     if (newDataReceived) {
-      newDataReceived = false; // Bajar la bandera
-
-      Serial.println("Esclavo 1: Procesando struct recibida.");
-      // Opcional: Imprimir algun dato para verificar
-      Serial.printf("  Recibido Esclavo 1 - num_message: %u\n", myData.num_message);
-      
-      // *** AQUI HACES LO QUE NECESITES CON LA ESTRUCTURA 'receivedMessage' ***
-      // Por ejemplo, actualizar el estado interno del esclavo, o actualizar
-      // la estructura 'messageToSend' con datos de respuesta basados en lo recibido.
-      // ***********************************************************
-
-      // Ejemplo de actualizacion de la estructura a enviar para la proxima solicitud:
+      newDataReceived = false; 
+      printMessage(myData);
       countMessage++;
-      myData.num_message = countMessage; // Un numero de mensaje para el esclavo
-      
-
-      Serial.println("Esclavo 1: Struct a enviar actualizada.");
+      myData.num_message = countMessage; 
     }
-
     // El loop puede hacer otras tareas
-    delay(10);
-
-
+    delay(2);
  }
   
 

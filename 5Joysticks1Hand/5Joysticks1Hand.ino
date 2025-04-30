@@ -9,8 +9,8 @@
    
 
 //#define DEVICE_2_ENABLED //18 Port
-//#define DEVICE_3_ENABLED //17 Port
-#define DEVICE_4_ENABLED //16 Port
+#define DEVICE_3_ENABLED //17 Port
+//#define DEVICE_4_ENABLED //16 Port
 
 
 #ifdef DEVICE_2_ENABLED
@@ -66,6 +66,28 @@ JoystickSensor joystickP3Direction = JoystickSensor(17, 18, true, true);
 JoystickSensor joystickP4Direction = JoystickSensor( 9, 10, true, true);
 #endif
 
+
+typedef struct sctruct_gamepad {
+  uint8_t idPlayer;       // ID del dispositivo que envía (ej: 1, 2, 3)
+    // Algún valor de ejemplo    
+  
+  boolean isPressUpLeft;  
+  boolean isPressUpRigth; 
+
+  boolean isPressDownLeft;
+  boolean isPressDownRigth;
+  
+  uint16_t directionLeft;
+  uint16_t directionRigth;
+
+  int posXLeft;
+  int posXRigth;
+
+  int posYLeft;
+  int posYRigth;
+};
+
+
 typedef struct JoystickType {
   uint8_t idPlayer;       // ID del dispositivo que envía (ej: 1, 2, 3)
   boolean isLeftSide;  // Algún valor de ejemplo    
@@ -88,6 +110,7 @@ typedef struct struct_message {
 
 struct_message receiveData;
 struct_message sendData;
+sctruct_gamepad gamepadData;
 
 //esp_now_peer_info_t peerInfo;
 
@@ -167,21 +190,27 @@ void setup() {
 
   receiveData = {};
   sendData = {};
+  gamepadData = {};
 
   Wire.setPins(I2C_SDA, I2C_SCL);
   if(DEVICE_ID == 2){//MAestro
     Wire.begin();
   }else{//SLAVE P3 por ahora
-    if(DEVICE_ID == 2){//MAestro
+    if(DEVICE_ID == 3){//MAestro
       Wire.begin(SLAVE_ADDRESS_P3);
+      Wire.onReceive(receiveEventOnlyListeners); // Llama a receiveEvent cuando reciba datos del maestro
+      //Wire.onRequest(requestEvent);   // Llama a requestEvent cuando el maestro pida datos a este esclavo
     }else{
       Wire.begin(SLAVE_ADDRESS_P4);
+      Wire.onReceive(receiveEvent); // Llama a receiveEvent cuando reciba datos del maestro
+      Wire.onRequest(requestEvent);   // Llama a requestEvent cuando el maestro pida datos a este esclavo
     }    
     // Registrar las funciones de evento
-    Wire.onReceive(receiveEvent); // Llama a receiveEvent cuando reciba datos del maestro
-    Wire.onRequest(requestEvent);   // Llama a requestEvent cuando el maestro pida datos a este esclavo
+    
 
   }
+
+  
   
   // Wire.setClock(400000); // Opcional: mayor velocidad
   delay(1000);
@@ -272,6 +301,18 @@ void receiveEvent(int howMany) {
   }
 }
 
+void receiveEventOnlyListeners(int howMany) {
+  if (howMany == sizeof(sctruct_gamepad)) {
+    Wire.readBytes((uint8_t*)&gamepadData, howMany);
+    newDataReceived = true; 
+  } else {
+    Serial.printf("Esclavo 1: Tamano de datos recibido inesperado: %d bytes (Esperado: %zu)\n", howMany, sizeof(sctruct_gamepad));
+    while (Wire.available()) {
+      Wire.read();
+    }
+  }
+}
+
 // Funcion que se llama automaticamente cuando el maestro SOLICITA datos a ESTE esclavo
 void requestEvent() {
   // ¡Envía los datos que el maestro solicitó!
@@ -320,6 +361,24 @@ struct_message requestMessageSlave(int address){
     
 }
 
+void sendDataToListenersOnly(int address){
+  // --- Enviar el dato al Esclavo 1 ---
+    //Serial.printf("\nMaestro: Enviando struct (%zu bytes) al Esclavo 1 (0x%02X)...\n", sizeof(sendData), address);
+    Wire.beginTransmission(address);
+    // !!! Envía la estructura completa como un bloque de bytes !!!
+    size_t bytesSent = Wire.write((uint8_t*)&gamepadData, sizeof(gamepadData));
+    byte end_transmission_status = Wire.endTransmission();
+
+    //Serial.printf("Maestro: Se intentaron enviar %zu bytes. Resultado: %d\n", bytesSent, end_transmission_status);
+    if (end_transmission_status == 0 && bytesSent == sizeof(gamepadData)) {
+      //Serial.println("Maestro: Envio a Esclavo 1 exitoso.");
+    } else {
+      Serial.printf("Maestro: Error/Envio parcial a Esclavo 1. Codigo: %d\n", end_transmission_status);
+    }
+    delay(2);
+   
+}
+
 void setSendDataOfSensors(boolean isLeftSide){
   
   countMessage++;
@@ -359,21 +418,49 @@ void setSendDataOfSensors(boolean isLeftSide){
   
 }
 
+void setGamepadData(struct_message messageIncomeP2, struct_message messageIncomeP4, int playerId){
+  gamepadData.directionLeft  = messageIncomeP2.joystickButtons[playerId-1].direction;
+  gamepadData.directionRigth = messageIncomeP4.joystickButtons[playerId-1].direction;
+
+  gamepadData.posXLeft = messageIncomeP2.joystickButtons[playerId-1].posX;
+  gamepadData.posXRigth = messageIncomeP4.joystickButtons[playerId-1].posX;
+
+  gamepadData.posYLeft = messageIncomeP2.joystickButtons[playerId-1].posY;
+  gamepadData.posYRigth = messageIncomeP4.joystickButtons[playerId-1].posY;
+
+  gamepadData.isPressDownLeft  = messageIncomeP2.joystickButtons[playerId-1].isPressDown;
+  gamepadData.isPressDownRigth = messageIncomeP4.joystickButtons[playerId-1].isPressDown;
+
+  gamepadData.isPressUpLeft  = messageIncomeP2.joystickButtons[playerId-1].isPressUp;
+  gamepadData.isPressUpRigth = messageIncomeP4.joystickButtons[playerId-1].isPressUp;
+
+}
+
 
 void loop() {
 
  if(DEVICE_ID == 2){
+    
     setSendDataOfSensors(DEVICE_ID == 2);
-    struct_message messageIncome = requestMessageSlave(SLAVE_ADDRESS_P4);
-    printMessage(messageIncome);
+
+    //RECEIVE THE REST OF INFO OF SENSORS AND SEND TO P$
+    struct_message messageIncomeP4 = requestMessageSlave(SLAVE_ADDRESS_P4);
+    printMessage(messageIncomeP4);
 
     joystickP2Direction.justPress(sendData.joystickButtons[1].posX, sendData.joystickButtons[1].posY, true);
-    joystickP2Direction.justPress(messageIncome.joystickButtons[1].posX, messageIncome.joystickButtons[1].posY, false);
+    joystickP2Direction.justPress(messageIncomeP4.joystickButtons[1].posX, messageIncomeP4.joystickButtons[1].posY, false);
 
     joystickP2Button.pressButton(sendData.joystickButtons[1].direction, true, false);
-    joystickP2Button.pressButton(messageIncome.joystickButtons[1].direction, false, false);
+    joystickP2Button.pressButton(messageIncomeP4.joystickButtons[1].direction, false, false);
 
     delay(5);
+    
+
+    //SEND TO OTHERS
+    //DEVICE 3
+    setGamepadData(sendData, messageIncomeP4, 3);
+    sendDataToListenersOnly(SLAVE_ADDRESS_P3);
+
  }else if(DEVICE_ID == 4){
     setSendDataOfSensors(DEVICE_ID == 4);   
     
@@ -387,6 +474,22 @@ void loop() {
 
       joystickP4Direction.justPress(receiveData.joystickButtons[3].posX, receiveData.joystickButtons[3].posY, true);
       joystickP4Button.pressButton(receiveData.joystickButtons[3].direction, true, false);
+      //countMessage++;
+      //sendData.num_message = countMessage; 
+    }
+    // El loop puede hacer otras tareas
+    delay(4);
+ 
+ }else{//Slaves
+    if (newDataReceived) {
+
+      newDataReceived = false;
+      //printMessage(receiveData);
+      joystickP3Direction.justPress(gamepadData.posXLeft , gamepadData.posYLeft , true);
+      joystickP3Direction.justPress(gamepadData.posXRigth, gamepadData.posYRigth, false);
+      
+      joystickP3Button.pressButton(gamepadData.directionLeft, true, false);  
+      joystickP3Button.pressButton(gamepadData.directionRigth, false, false);
       //countMessage++;
       //sendData.num_message = countMessage; 
     }

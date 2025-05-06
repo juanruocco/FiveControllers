@@ -77,10 +77,17 @@ void JoystickSensor::justPress(int xPosition, int yPosition, boolean isLeftSide)
 int readAxis(int axis, boolean inverse, int centerCalibration) {// output: -4095 to 4095, 0 in  calibration choose default
 
   int reading = analogRead(axis);
-  /*Serial.print("center calib: ");
-  Serial.print(centerCalibration);
-  Serial.print(" ,analogue: ");
-  Serial.println(reading);*/
+  /*
+  if(axis == 9){
+    Serial.print("axis: ");
+    Serial.print(axis);
+    Serial.print(" center calib: ");
+    Serial.print(centerCalibration);
+    Serial.print(" ,analogue: ");
+    Serial.println(reading);
+  }
+  */
+  
   int distance = reading - centerCalibration;
 
   if (abs(distance) < thresholdError) {

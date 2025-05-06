@@ -9,19 +9,16 @@
 //const int I2C_SDA = 21;
 //const int I2C_SCL = 47;
 
-
-
 //#define DEVICE_1_ENABLED 
-#define DEVICE_2_ENABLED //16 Port 
+//#define DEVICE_2_ENABLED //16 Port 
 //#define DEVICE_3_ENABLED //17 Port &/ 4 port esp32
-//#define DEVICE_4_ENABLED //18 Port
+#define DEVICE_4_ENABLED //18 Port
 //#define DEVICE_5_ENABLED 
 
 #ifdef DEVICE_1_ENABLED
 #define DEVICE_ID 1
 const int I2C_SCL = 47;
 const int I2C_SDA = 21;
-
 #endif
 
 #ifdef DEVICE_2_ENABLED
@@ -115,8 +112,7 @@ JoystickSensor joystickP5Direction = JoystickSensor( 20, 19, true, inverseYJoyst
 
 #pragma pack(1)
 typedef struct sctruct_gamepad {
-  uint8_t idPlayer;       // ID del dispositivo que envía (ej: 1, 2, 3)
-    // Algún valor de ejemplo    
+  uint8_t idPlayer;
   
   boolean isPressUpLeft;  
   boolean isPressUpRigth; 
@@ -211,7 +207,7 @@ void printGamepadData(sctruct_gamepad data){
   Serial.print("\t,posX : ");
   Serial.print(data.posXRigth);
   Serial.print("\t,posY : ");
-  Serial.print(data.posXRigth);
+  Serial.print(data.posYRigth);
   Serial.print("\t,isPressDown: ");
   Serial.print(data.isPressDownRigth);
   Serial.println("\t");
@@ -301,7 +297,6 @@ void setup() {
       Wire.onReceive(receiveEvent); // Llama a receiveEvent cuando reciba datos del maestro
       Wire.onRequest(requestEvent);   // Llama a requestEvent cuando el maestro pida datos a este esclavo
       
-      
     }else if(DEVICE_ID == 3){
       Wire.begin(SLAVE_ADDRESS_P3);
       Wire.setClock(100000);
@@ -325,7 +320,6 @@ void setup() {
     // Registrar las funciones de evento
     
   }
-  // Wire.setClock(400000); // Opcional: mayor velocidad
   delay(1000);
  
 }
@@ -543,6 +537,8 @@ void setSendDataOfSensors(boolean isLeftSide){
   if(DEVICE_ID == 2){
     isPressDown3 = !isPressDown3;
   }
+  //Serial.print("x3: ");
+  //Serial.println(x3);
 
   sendData.joystickButtons[2].idPlayer = 3;
   sendData.joystickButtons[2].isLeftSide  = isLeftSide;
@@ -659,7 +655,8 @@ void loop() {
 
  }else if(DEVICE_ID == 4){
     setSendDataOfSensors(DEVICE_ID == 4);   
-    
+    //printMessage(sendData);
+
     joystickP4Direction.justPress(sendData.joystickButtons[3].posX, sendData.joystickButtons[3].posY, false);
     joystickP4Button.pressButton(sendData.joystickButtons[3].direction, false, false);
       

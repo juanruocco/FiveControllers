@@ -6,31 +6,57 @@
 //I2C
 #include <Wire.h>
 
-   
+//const int I2C_SDA = 21;
+//const int I2C_SCL = 47;
 
-//#define DEVICE_2_ENABLED //18 Port
-#define DEVICE_3_ENABLED //17 Port
-//#define DEVICE_4_ENABLED //16 Port
 
+
+//#define DEVICE_1_ENABLED 
+#define DEVICE_2_ENABLED //16 Port 
+//#define DEVICE_3_ENABLED //17 Port &/ 4 port esp32
+//#define DEVICE_4_ENABLED //18 Port
+//#define DEVICE_5_ENABLED 
+
+#ifdef DEVICE_1_ENABLED
+#define DEVICE_ID 1
+const int I2C_SCL = 47;
+const int I2C_SDA = 21;
+
+#endif
 
 #ifdef DEVICE_2_ENABLED
 #define DEVICE_ID 2
+const int I2C_SCL = 47;
+const int I2C_SDA = 21;
 #endif
 
 #ifdef DEVICE_3_ENABLED
 #define DEVICE_ID 3
+const int I2C_SCL = 20;//20;//22;
+const int I2C_SDA = 19;//19;//21;
 #endif
 
 #ifdef DEVICE_4_ENABLED
 #define DEVICE_ID 4
+const int I2C_SCL = 47;
+const int I2C_SDA = 21;
 #endif
 
-const int I2C_SDA = 19;
-const int I2C_SCL = 20;
+#ifdef DEVICE_5_ENABLED
+#define DEVICE_ID 5
+const int I2C_SCL = 47;
+const int I2C_SDA = 21;
+#endif
+
+
+
+
 volatile bool newDataReceived = false; 
 
+#define SLAVE_ADDRESS_P1 0x08
 #define SLAVE_ADDRESS_P3 0x10
 #define SLAVE_ADDRESS_P4 0x11
+#define SLAVE_ADDRESS_P5 0x12
 
 int lastTimeCheckMillis = 0;
 
@@ -38,35 +64,56 @@ XboxGamepadDevice *gamepad;
 
 bool buttonJoystickLeftDownPressed = false;
 
+#ifdef DEVICE_1_ENABLED
+BleCompositeHID compositeHID("P2h", "P2h", 30);
+#endif
+
 #ifdef DEVICE_2_ENABLED
-BleCompositeHID compositeHID("P2g", "P2g", 29);
+BleCompositeHID compositeHID("P2h", "P2h", 30);
 #endif
 
 #ifdef DEVICE_3_ENABLED
-BleCompositeHID compositeHID("P3g", "P3g", 29);
+BleCompositeHID compositeHID("P3h", "P3h", 30);
 #endif
 
 #ifdef DEVICE_4_ENABLED
-BleCompositeHID compositeHID("P4g", "P4g", 29);
+BleCompositeHID compositeHID("P4h", "P4h", 30);
 #endif
+
+#ifdef DEVICE_5_ENABLED
+BleCompositeHID compositeHID("P5h", "P5h", 30);
+#endif
+
 
 //JOYSTICK VARIABLES
+int pressDownPinPlayer1 = 42;
+int pressDownPinPlayer2 = 41;
+int pressDownPinPlayer3 = 40;
+int pressDownPinPlayer4 = 39;
+int pressDownPinPlayer5 = 38;
 
-JoystickButton joystickP2Button = JoystickButton( 4,  5, false, false, 0);
-JoystickButton joystickP3Button = JoystickButton(15, 16, false, false, 0);
-JoystickButton joystickP4Button = JoystickButton( 8,  3, false, false, 0);
 
-#ifdef DEVICE_4_ENABLED
-JoystickSensor  joystickP2Direction = JoystickSensor(6,   7, true, false);
-JoystickSensor  joystickP3Direction = JoystickSensor(17, 18, true, false);
-JoystickSensor  joystickP4Direction = JoystickSensor( 9, 10, true, false);
+#ifdef DEVICE_2_ENABLED
+boolean inverseYJoystickDirections = false;
 #else
-JoystickSensor joystickP2Direction = JoystickSensor(6,   7, true, true);
-JoystickSensor joystickP3Direction = JoystickSensor(17, 18, true, true);
-JoystickSensor joystickP4Direction = JoystickSensor( 9, 10, true, true);
+boolean inverseYJoystickDirections = true;
 #endif
 
+//Joysticks Buttons
+JoystickButton joystickP1Button = JoystickButton(  4,   5, false, false, 0);
+JoystickButton joystickP2Button = JoystickButton( 15,  16, false, false, 0);
+JoystickButton joystickP3Button = JoystickButton(  8,   3, false, false, 0);
+JoystickButton joystickP4Button = JoystickButton( 11,  12, false, false, 0);
+JoystickButton joystickP5Button = JoystickButton( 47,  21, false, false, 0);
 
+  //Directions
+JoystickSensor joystickP1Direction = JoystickSensor( 6,   7, true, inverseYJoystickDirections);
+JoystickSensor joystickP2Direction = JoystickSensor(17,  18, true, inverseYJoystickDirections);
+JoystickSensor joystickP3Direction = JoystickSensor( 9,  10, true, inverseYJoystickDirections);
+JoystickSensor joystickP4Direction = JoystickSensor( 13, 14, true, inverseYJoystickDirections);
+JoystickSensor joystickP5Direction = JoystickSensor( 20, 19, true, inverseYJoystickDirections);
+
+#pragma pack(1)
 typedef struct sctruct_gamepad {
   uint8_t idPlayer;       // ID del dispositivo que envía (ej: 1, 2, 3)
     // Algún valor de ejemplo    
@@ -86,7 +133,7 @@ typedef struct sctruct_gamepad {
   int posYLeft;
   int posYRigth;
 };
-
+#pragma pack()
 
 typedef struct JoystickType {
   uint8_t idPlayer;       // ID del dispositivo que envía (ej: 1, 2, 3)
@@ -112,12 +159,10 @@ struct_message receiveData;
 struct_message sendData;
 sctruct_gamepad gamepadData;
 
-//esp_now_peer_info_t peerInfo;
-
 //Print Message
 void printMessage(struct_message data){
   
-  for(int i = 1; i<4 ; i++){
+  for(int i = 0; i<5 ; i++){
     Serial.print("id: ");
     Serial.print(data.joystickButtons[i].idPlayer);
     Serial.print("   ,direc: ");
@@ -126,6 +171,8 @@ void printMessage(struct_message data){
     Serial.print(data.joystickButtons[i].posX);
     Serial.print("\t,posY: ");
     Serial.print(data.joystickButtons[i].posY);
+    Serial.print("\t,isPressDown: ");
+    Serial.print(data.joystickButtons[i].isPressDown);
     Serial.print("\t");
     
     /*
@@ -145,7 +192,31 @@ void printMessage(struct_message data){
   Serial.println(data.num_message);      
 }
 
+void printGamepadData(sctruct_gamepad data){
 
+  Serial.print("id: ");
+  Serial.print(data.idPlayer);
+  Serial.print(" LEFT:  ,direct: ");
+  Serial.print(data.directionLeft);
+  Serial.print("\t,posX : ");
+  Serial.print(data.posXLeft);
+  Serial.print("\t,posY : ");
+  Serial.print(data.posYLeft);
+  Serial.print("\t,isPressDown: ");
+  Serial.print(data.isPressDownLeft);
+  Serial.print("\t");
+
+  Serial.print(" RIGTH:  ,direc: ");
+  Serial.print(data.directionRigth);
+  Serial.print("\t,posX : ");
+  Serial.print(data.posXRigth);
+  Serial.print("\t,posY : ");
+  Serial.print(data.posXRigth);
+  Serial.print("\t,isPressDown: ");
+  Serial.print(data.isPressDownRigth);
+  Serial.println("\t");
+
+}
 
 void setup() {
 
@@ -162,7 +233,22 @@ void setup() {
   Serial.println("Using PID: " + String(hostConfig.getPid(), HEX));
   Serial.println("Using GUID version: " + String(hostConfig.getGuidVersion(), HEX));
   Serial.println("Using serial number: " + String(hostConfig.getSerialNumber()));
+  if(DEVICE_ID == 4){
+    pinMode(pressDownPinPlayer1, INPUT_PULLDOWN);
+    pinMode(pressDownPinPlayer2, INPUT_PULLDOWN);
+    pinMode(pressDownPinPlayer3, INPUT_PULLDOWN);
+    pinMode(pressDownPinPlayer4, INPUT_PULLDOWN);
+    pinMode(pressDownPinPlayer5, INPUT_PULLDOWN);
     
+  }else{
+    pinMode(pressDownPinPlayer1, INPUT_PULLUP);
+    pinMode(pressDownPinPlayer2, INPUT_PULLUP);
+    pinMode(pressDownPinPlayer3, INPUT_PULLUP);
+    pinMode(pressDownPinPlayer4, INPUT_PULLUP);
+    pinMode(pressDownPinPlayer5, INPUT_PULLUP);
+  }
+  
+  
   // Set up gamepad
   gamepad = new XboxGamepadDevice(config);
 
@@ -178,15 +264,27 @@ void setup() {
   gamepad->setRightThumb(1, 1);
   gamepad->sendGamepadReport();
 
-  joystickP2Direction.init(gamepad);
-  //joystickP2Direction.setCallback(callbackDetectMovementJoystick);
+  joystickP1Direction.init(gamepad);
   joystickP3Direction.init(gamepad);
-  joystickP4Direction.init(gamepad);
+  if(DEVICE_ID == 4 || DEVICE_ID == 2){
+    joystickP2Direction.init(gamepad);
+    //joystickP2Direction.setCallback(callbackDetectMovementJoystick);
+    
+    joystickP4Direction.init(gamepad);
+    joystickP5Direction.init(gamepad);
+  }
+  
 
-  joystickP2Button.init(gamepad);
-  //joystickP2Button.setCallbackDirection(callbackDetectButtonsJoystick);
+  joystickP1Button.init(gamepad);
   joystickP3Button.init(gamepad);
-  joystickP4Button.init(gamepad);
+  if(DEVICE_ID == 4 || DEVICE_ID == 2){
+    joystickP2Button.init(gamepad);
+    //joystickP2Button.setCallbackDirection(callbackDetectButtonsJoystick);
+    
+    joystickP4Button.init(gamepad);
+    joystickP5Button.init(gamepad);
+  }
+  
 
   receiveData = {};
   sendData = {};
@@ -195,28 +293,41 @@ void setup() {
   Wire.setPins(I2C_SDA, I2C_SCL);
   if(DEVICE_ID == 2){//MAestro
     Wire.begin();
-  }else{//SLAVE P3 por ahora
-    if(DEVICE_ID == 3){//MAestro
-      Wire.begin(SLAVE_ADDRESS_P3);
-      Wire.onReceive(receiveEventOnlyListeners); // Llama a receiveEvent cuando reciba datos del maestro
-      //Wire.onRequest(requestEvent);   // Llama a requestEvent cuando el maestro pida datos a este esclavo
-    }else{
+    Wire.setClock(100000);
+  }else{//SLAVES 
+    if(DEVICE_ID == 4){//Maestro
       Wire.begin(SLAVE_ADDRESS_P4);
+      Wire.setClock(100000);
       Wire.onReceive(receiveEvent); // Llama a receiveEvent cuando reciba datos del maestro
       Wire.onRequest(requestEvent);   // Llama a requestEvent cuando el maestro pida datos a este esclavo
-    }    
+      
+      
+    }else if(DEVICE_ID == 3){
+      Wire.begin(SLAVE_ADDRESS_P3);
+      Wire.setClock(100000);
+      //Wire.begin(I2C_SDA, I2C_SCL);
+      Wire.onReceive(receiveEventOnlyListeners); // Llama a receiveEvent cuando reciba datos del maestro
+      //Wire.onRequest(requestEvent);   // Llama a requestEvent cuando el maestro pida datos a este esclavo
+    } else if(DEVICE_ID == 1){
+
+      Wire.begin(SLAVE_ADDRESS_P1);
+      Wire.setClock(100000);
+      Wire.onReceive(receiveEventOnlyListeners); // Llama a receiveEvent cuando reciba datos del maestro
+      //Wire.onRequest(requestEvent);   // Llama a requestEvent cuando el maestro pida datos a este esclavo
+    
+    } else if(DEVICE_ID == 5){
+
+      Wire.begin(SLAVE_ADDRESS_P5);
+      Wire.setClock(100000);
+      Wire.onReceive(receiveEventOnlyListeners); // Llama a receiveEvent cuando reciba datos del maestro
+      //Wire.onRequest(requestEvent);   // Llama a requestEvent cuando el maestro pida datos a este esclavo
+    } 
     // Registrar las funciones de evento
     
-
   }
-
-  
-  
   // Wire.setClock(400000); // Opcional: mayor velocidad
   delay(1000);
-
-  
-  
+ 
 }
 
 /*
@@ -326,7 +437,7 @@ void requestEvent() {
 }
 
 struct_message requestMessageSlave(int address){
-  // --- Enviar el dato al Esclavo 1 ---
+    // --- Enviar el dato al Esclavo 1 ---
     //Serial.printf("\nMaestro: Enviando struct (%zu bytes) al Esclavo 1 (0x%02X)...\n", sizeof(sendData), address);
     Wire.beginTransmission(address);
     // !!! Envía la estructura completa como un bloque de bytes !!!
@@ -383,38 +494,96 @@ void setSendDataOfSensors(boolean isLeftSide){
   
   countMessage++;
   sendData.num_message = countMessage;
+
+  //First Finger  
+  int direction1 = joystickP2Button.detectDirecction();
+  int x1 = joystickP2Direction.readX();
+  int y1 = joystickP2Direction.readY();
+  int buttonDown1 = digitalRead(pressDownPinPlayer1);
+  boolean isPressDown1 = buttonDown1;
+  if(DEVICE_ID == 1){
+    isPressDown1 = !isPressDown1;
+  }
+  //Serial.print("button down: ");
+  //Serial.println(buttonDown1);
+
+  sendData.joystickButtons[0].idPlayer = 1;
+  sendData.joystickButtons[0].isLeftSide  = isLeftSide;
+  sendData.joystickButtons[0].direction = direction1;
+  sendData.joystickButtons[0].posX = x1;
+  sendData.joystickButtons[0].posY = y1;
+  sendData.joystickButtons[0].isPressDown = isPressDown1;
   
   //Second Finger  
   int direction2 = joystickP2Button.detectDirecction();
   int x2 = joystickP2Direction.readX();
   int y2 = joystickP2Direction.readY();
+  int buttonDown2 = digitalRead(pressDownPinPlayer2);
+  boolean isPressDown2 = buttonDown2;
+  if(DEVICE_ID == 2){
+    isPressDown2 = !isPressDown2;
+  }
+  //Serial.print("button down: ");
+  //Serial.println(buttonDown2);
+
   sendData.joystickButtons[1].idPlayer = 2;
   sendData.joystickButtons[1].isLeftSide  = isLeftSide;
   sendData.joystickButtons[1].direction = direction2;
   sendData.joystickButtons[1].posX = x2;
   sendData.joystickButtons[1].posY = y2;
-  
+  sendData.joystickButtons[1].isPressDown = isPressDown2;
+
   
   //Third Finger
   int direction3 = joystickP3Button.detectDirecction();
   int x3 = joystickP3Direction.readX();
   int y3 = joystickP3Direction.readY();
+  int buttonDown3 = digitalRead(pressDownPinPlayer3);
+  boolean isPressDown3 = buttonDown3;
+  if(DEVICE_ID == 2){
+    isPressDown3 = !isPressDown3;
+  }
+
   sendData.joystickButtons[2].idPlayer = 3;
   sendData.joystickButtons[2].isLeftSide  = isLeftSide;
   sendData.joystickButtons[2].direction = direction3;
   sendData.joystickButtons[2].posX = x3;
   sendData.joystickButtons[2].posY = y3;
+  sendData.joystickButtons[2].isPressDown = isPressDown3;
 
   //Four Finger
   int direction4 = joystickP4Button.detectDirecction();
   int x4 = joystickP4Direction.readX();
   int y4 = joystickP4Direction.readY();
+  int buttonDown4 = digitalRead(pressDownPinPlayer4);
+  boolean isPressDown4 = buttonDown4;
+  if(DEVICE_ID == 2){
+    isPressDown4 = !isPressDown4;
+  }
   
   sendData.joystickButtons[3].idPlayer = 4;
   sendData.joystickButtons[3].isLeftSide  = isLeftSide;
   sendData.joystickButtons[3].direction = direction4;
   sendData.joystickButtons[3].posX = x4;
   sendData.joystickButtons[3].posY = y4;
+  sendData.joystickButtons[3].isPressDown = isPressDown4;
+
+  //Five Finger
+  int direction5 = joystickP4Button.detectDirecction();
+  int x5 = joystickP5Direction.readX();
+  int y5 = joystickP5Direction.readY();
+  int buttonDown5 = digitalRead(pressDownPinPlayer5);
+  boolean isPressDown5 = buttonDown5;
+  if(DEVICE_ID == 2){
+    isPressDown5 = !isPressDown5;
+  }
+  
+  sendData.joystickButtons[4].idPlayer = 5;
+  sendData.joystickButtons[4].isLeftSide  = isLeftSide;
+  sendData.joystickButtons[4].direction = direction5;
+  sendData.joystickButtons[4].posX = x5;
+  sendData.joystickButtons[4].posY = y5;
+  sendData.joystickButtons[4].isPressDown = isPressDown5;
   
 }
 
@@ -436,6 +605,24 @@ void setGamepadData(struct_message messageIncomeP2, struct_message messageIncome
 
 }
 
+void testPressButtonDown(){
+  if (buttonJoystickLeftDownPressed == false) {
+    buttonJoystickLeftDownPressed = true;
+    //gamepad->press(gamepadButtons[0][8]);
+    gamepad-> setLeftTrigger(30000);
+    gamepad->sendGamepadReport();
+  } 
+}
+
+void testReleaseButtonDown(){
+  if (buttonJoystickLeftDownPressed == true) {
+    //gamepad->release(gamepadButtons[0][7]);
+    gamepad-> setLeftTrigger(0);
+    gamepad->sendGamepadReport();
+    buttonJoystickLeftDownPressed = false;
+  }
+}
+
 
 void loop() {
 
@@ -449,17 +636,26 @@ void loop() {
 
     joystickP2Direction.justPress(sendData.joystickButtons[1].posX, sendData.joystickButtons[1].posY, true);
     joystickP2Direction.justPress(messageIncomeP4.joystickButtons[1].posX, messageIncomeP4.joystickButtons[1].posY, false);
+    if(sendData.joystickButtons[1].isPressDown){
+      testPressButtonDown();
+    }else{
+      testReleaseButtonDown();
+    } 
 
     joystickP2Button.pressButton(sendData.joystickButtons[1].direction, true, false);
     joystickP2Button.pressButton(messageIncomeP4.joystickButtons[1].direction, false, false);
 
-    delay(5);
-    
+    delay(5);    
 
     //SEND TO OTHERS
     //DEVICE 3
     setGamepadData(sendData, messageIncomeP4, 3);
     sendDataToListenersOnly(SLAVE_ADDRESS_P3);
+
+    //SEND TO OTHERS
+    //DEVICE 1
+    //setGamepadData(sendData, messageIncomeP4, 3);
+    //sendDataToListenersOnly(SLAVE_ADDRESS_P3);
 
  }else if(DEVICE_ID == 4){
     setSendDataOfSensors(DEVICE_ID == 4);   
@@ -476,6 +672,13 @@ void loop() {
       joystickP4Button.pressButton(receiveData.joystickButtons[3].direction, true, false);
       //countMessage++;
       //sendData.num_message = countMessage; 
+
+      if(receiveData.joystickButtons[3].isPressDown){
+        testPressButtonDown();
+      }else{
+        testReleaseButtonDown();
+      }
+
     }
     // El loop puede hacer otras tareas
     delay(4);
@@ -484,117 +687,23 @@ void loop() {
     if (newDataReceived) {
 
       newDataReceived = false;
-      //printMessage(receiveData);
+      printGamepadData(gamepadData);
       joystickP3Direction.justPress(gamepadData.posXLeft , gamepadData.posYLeft , true);
       joystickP3Direction.justPress(gamepadData.posXRigth, gamepadData.posYRigth, false);
       
       joystickP3Button.pressButton(gamepadData.directionLeft, true, false);  
       joystickP3Button.pressButton(gamepadData.directionRigth, false, false);
+
+      if(gamepadData.isPressDownLeft){
+        testPressButtonDown();
+      }else{
+        testReleaseButtonDown();
+      }
       //countMessage++;
       //sendData.num_message = countMessage; 
     }
     // El loop puede hacer otras tareas
     delay(4);
  }
-  
-
-  /*
-  if (DEVICE_ID == 2|| DEVICE_ID == 4){
-
-    int currentMillis = millis();
-    if(  (currentMillis-lastTimeCheckMillis) > 40){
-
-      //joystickDirectionDetect();
-      //joysticksButtonsDetect();
-      
-      //Second Finger
-      int direction2 = joystickP2Button.detectDirecction();
-      int x2 = joystickP2Direction.readX();
-      int y2 = joystickP2Direction.readY();
-      if(DEVICE_ID == 2){
-        joystickP2Direction.justPress(x2, y2, true);
-        delay(1);
-        joystickP2Button.pressButton(direction2, true, false);
-        delay(1);
-      }else{
-        myData.joystickButtons[1].idPlayer = 2;
-        myData.joystickButtons[1].isLeftSide  = false;
-        myData.joystickButtons[1].direction = direction2;
-        myData.joystickButtons[1].posX = x2;
-        myData.joystickButtons[1].posY = y2;
-      }
-      
-      //Third Finger
-      int direction3 = joystickP3Button.detectDirecction();
-      int x3 = joystickP3Direction.readX();
-      int y3 = joystickP3Direction.readY();
-      myData.joystickButtons[2].idPlayer = 3;
-      myData.joystickButtons[2].isLeftSide  = true;
-      if(DEVICE_ID == 4){
-        myData.joystickButtons[2].isLeftSide  = false;
-      }
-      myData.joystickButtons[2].direction = direction3;
-      myData.joystickButtons[2].posX = x3;
-      myData.joystickButtons[2].posY = y3;
-
-      //Four Finger
-      int direction4 = joystickP4Button.detectDirecction();
-      int x4 = joystickP4Direction.readX();
-      int y4 = joystickP4Direction.readY();
-      if(DEVICE_ID == 2){
-        myData.joystickButtons[3].idPlayer = 4;
-        myData.joystickButtons[3].isLeftSide  = true;
-        myData.joystickButtons[3].direction = direction4;
-        myData.joystickButtons[3].posX = x4;
-        myData.joystickButtons[3].posY = y4;
-      }else{//DEVICE_ID == 4
-        joystickP4Direction.justPress(x4, y4, false);
-        delay(1);
-        joystickP4Button.pressButton(direction4, false, false);
-        delay(1);
-      }
-      
-
-      sendTestMessage();
-      
-      //Serial.print("Current Millis: ");
-      //Serial.println(lastTimeCheckMillis); 
-      lastTimeCheckMillis = currentMillis;
-    }
-  }
-  */
-
-  //Serial.print("Peers count: ");
-  //Serial.println(countPeers());
-
-  /*
-  int delayLoop = millis() - startLoop;
-
-  int buttonLeftDown = digitalRead(buttonJoystickLeftDown);
-  int buttonRigthUp = digitalRead(triggerButtons4);
-
-  
-  if (buttonLeftDown == LOW) {
-    if (buttonJoystickLeftDownPressed == false) {
-        buttonJoystickLeftDownPressed = true;
-        //gamepad->press(gamepadButtons[0][8]);
-        gamepad-> setLeftTrigger(30000);
-        gamepad->sendGamepadReport();
-    }    
-  } else {
-    if (buttonJoystickLeftDownPressed == true) {
-      //gamepad->release(gamepadButtons[0][7]);
-      gamepad-> setRightTrigger(0);
-      gamepad-> setLeftTrigger(0);
-      gamepad->sendGamepadReport();
-      buttonJoystickLeftDownPressed = false;
-    }
-    //buttonJoystickLeftDownPressed = false;
-  }
-  */
-
-  //Serial.print("loop elapse: ");
-  //Serial.println(delayLoop);
-  //delay(2);
 
 }

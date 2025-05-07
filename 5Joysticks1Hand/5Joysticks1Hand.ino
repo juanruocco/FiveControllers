@@ -29,8 +29,8 @@ const int I2C_SDA = 21;
 
 #ifdef DEVICE_3_ENABLED
 #define DEVICE_ID 3
-const int I2C_SCL = 20;//20;//22;
-const int I2C_SDA = 19;//19;//21;
+const int I2C_SCL = 22;//20;//22;
+const int I2C_SDA = 21;//19;//21;
 #endif
 
 #ifdef DEVICE_4_ENABLED
@@ -44,8 +44,6 @@ const int I2C_SDA = 21;
 const int I2C_SCL = 47;
 const int I2C_SDA = 21;
 #endif
-
-
 
 
 volatile bool newDataReceived = false; 
@@ -62,7 +60,7 @@ XboxGamepadDevice *gamepad;
 bool buttonJoystickLeftDownPressed = false;
 
 #ifdef DEVICE_1_ENABLED
-BleCompositeHID compositeHID("P2h", "P2h", 30);
+BleCompositeHID compositeHID("P1h", "P1h", 30);
 #endif
 
 #ifdef DEVICE_2_ENABLED
@@ -92,8 +90,12 @@ int pressDownPinPlayer5 = 38;
 
 #ifdef DEVICE_2_ENABLED
 boolean inverseYJoystickDirections = false;
+boolean inverseYJoystickCheaperDirections = false;
+boolean inverseXJoystickButtons = false;
 #else
 boolean inverseYJoystickDirections = true;
+boolean inverseYJoystickCheaperDirections = false;
+boolean inverseXJoystickButtons = true;
 #endif
 
 //Joysticks Buttons
@@ -101,14 +103,14 @@ JoystickButton joystickP1Button = JoystickButton(  4,   5, false, false, 0);
 JoystickButton joystickP2Button = JoystickButton( 15,  16, false, false, 0);
 JoystickButton joystickP3Button = JoystickButton(  8,   3, false, false, 0);
 JoystickButton joystickP4Button = JoystickButton( 11,  12, false, false, 0);
-JoystickButton joystickP5Button = JoystickButton( 47,  21, false, false, 0);
+JoystickButton joystickP5Button = JoystickButton(  1,   2, inverseXJoystickButtons, false, 0);
 
   //Directions
-JoystickSensor joystickP1Direction = JoystickSensor( 6,   7, true, inverseYJoystickDirections);
+JoystickSensor joystickP1Direction = JoystickSensor( 6,   7, true, inverseYJoystickCheaperDirections);
 JoystickSensor joystickP2Direction = JoystickSensor(17,  18, true, inverseYJoystickDirections);
 JoystickSensor joystickP3Direction = JoystickSensor( 9,  10, true, inverseYJoystickDirections);
 JoystickSensor joystickP4Direction = JoystickSensor( 13, 14, true, inverseYJoystickDirections);
-JoystickSensor joystickP5Direction = JoystickSensor( 20, 19, true, inverseYJoystickDirections);
+JoystickSensor joystickP5Direction = JoystickSensor( 20, 19, true, inverseYJoystickCheaperDirections);
 
 #pragma pack(1)
 typedef struct sctruct_gamepad {
@@ -229,18 +231,19 @@ void setup() {
   Serial.println("Using PID: " + String(hostConfig.getPid(), HEX));
   Serial.println("Using GUID version: " + String(hostConfig.getGuidVersion(), HEX));
   Serial.println("Using serial number: " + String(hostConfig.getSerialNumber()));
-  if(DEVICE_ID == 4){
-    pinMode(pressDownPinPlayer1, INPUT_PULLDOWN);
-    pinMode(pressDownPinPlayer2, INPUT_PULLDOWN);
-    pinMode(pressDownPinPlayer3, INPUT_PULLDOWN);
-    pinMode(pressDownPinPlayer4, INPUT_PULLDOWN);
-    pinMode(pressDownPinPlayer5, INPUT_PULLDOWN);
-    
-  }else{
+  if(DEVICE_ID == 2){
     pinMode(pressDownPinPlayer1, INPUT_PULLUP);
     pinMode(pressDownPinPlayer2, INPUT_PULLUP);
     pinMode(pressDownPinPlayer3, INPUT_PULLUP);
     pinMode(pressDownPinPlayer4, INPUT_PULLUP);
+    pinMode(pressDownPinPlayer5, INPUT_PULLUP);
+    
+    
+  }else{
+    pinMode(pressDownPinPlayer1, INPUT_PULLUP);
+    pinMode(pressDownPinPlayer2, INPUT_PULLDOWN);
+    pinMode(pressDownPinPlayer3, INPUT_PULLDOWN);
+    pinMode(pressDownPinPlayer4, INPUT_PULLDOWN);
     pinMode(pressDownPinPlayer5, INPUT_PULLUP);
   }
   
@@ -261,25 +264,20 @@ void setup() {
   gamepad->sendGamepadReport();
 
   joystickP1Direction.init(gamepad);
+  joystickP2Direction.init(gamepad);
+  //joystickP2Direction.setCallback(callbackDetectMovementJoystick);
   joystickP3Direction.init(gamepad);
-  if(DEVICE_ID == 4 || DEVICE_ID == 2){
-    joystickP2Direction.init(gamepad);
-    //joystickP2Direction.setCallback(callbackDetectMovementJoystick);
-    
-    joystickP4Direction.init(gamepad);
-    joystickP5Direction.init(gamepad);
-  }
+  
+  joystickP4Direction.init(gamepad);
+  joystickP5Direction.init(gamepad);
   
 
   joystickP1Button.init(gamepad);
+  joystickP2Button.init(gamepad);
+  //joystickP2Button.setCallbackDirection(callbackDetectButtonsJoystick);
   joystickP3Button.init(gamepad);
-  if(DEVICE_ID == 4 || DEVICE_ID == 2){
-    joystickP2Button.init(gamepad);
-    //joystickP2Button.setCallbackDirection(callbackDetectButtonsJoystick);
-    
-    joystickP4Button.init(gamepad);
-    joystickP5Button.init(gamepad);
-  }
+  joystickP4Button.init(gamepad);
+  joystickP5Button.init(gamepad);
   
 
   receiveData = {};
@@ -490,14 +488,14 @@ void setSendDataOfSensors(boolean isLeftSide){
   sendData.num_message = countMessage;
 
   //First Finger  
-  int direction1 = joystickP2Button.detectDirecction();
-  int x1 = joystickP2Direction.readX();
-  int y1 = joystickP2Direction.readY();
+  int direction1 = joystickP1Button.detectDirecction();
+  int x1 = joystickP1Direction.readX();
+  int y1 = joystickP1Direction.readY();
   int buttonDown1 = digitalRead(pressDownPinPlayer1);
   boolean isPressDown1 = buttonDown1;
-  if(DEVICE_ID == 1){
-    isPressDown1 = !isPressDown1;
-  }
+  //if(DEVICE_ID == 2){
+      isPressDown1 = !isPressDown1;
+  //}
   //Serial.print("button down: ");
   //Serial.println(buttonDown1);
 
@@ -565,14 +563,14 @@ void setSendDataOfSensors(boolean isLeftSide){
   sendData.joystickButtons[3].isPressDown = isPressDown4;
 
   //Five Finger
-  int direction5 = joystickP4Button.detectDirecction();
+  int direction5 = joystickP5Button.detectDirecction();
   int x5 = joystickP5Direction.readX();
   int y5 = joystickP5Direction.readY();
   int buttonDown5 = digitalRead(pressDownPinPlayer5);
   boolean isPressDown5 = buttonDown5;
-  if(DEVICE_ID == 2){
-    isPressDown5 = !isPressDown5;
-  }
+  //if(DEVICE_ID == 2){
+      isPressDown5 = !isPressDown5;
+  //}
   
   sendData.joystickButtons[4].idPlayer = 5;
   sendData.joystickButtons[4].isLeftSide  = isLeftSide;

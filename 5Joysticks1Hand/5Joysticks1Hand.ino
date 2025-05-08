@@ -6,43 +6,45 @@
 //I2C
 #include <Wire.h>
 
-//const int I2C_SDA = 21;
-//const int I2C_SCL = 47;
+const int I2C_SDA_ESP = 21;
+const int I2C_SCL_ESP = 22;
+const int I2C_SDA_ESPS3 = 21;
+const int I2C_SCL_ESPS3 = 47;
 
-//#define DEVICE_1_ENABLED 
-//#define DEVICE_2_ENABLED //16 Port 
-//#define DEVICE_3_ENABLED //17 Port &/ 4 port esp32
-#define DEVICE_4_ENABLED //18 Port
-//#define DEVICE_5_ENABLED 
+//#define DEVICE_1_ENABLED   // 4 port esp32
+//#define DEVICE_2_ENABLED // 16 Port 
+//#define DEVICE_3_ENABLED // 4 port esp32
+//#define DEVICE_4_ENABLED // 18 Port
+#define DEVICE_5_ENABLED // 4 port esp32
 
-#ifdef DEVICE_1_ENABLED
+#ifdef DEVICE_1_ENABLED 
 #define DEVICE_ID 1
-const int I2C_SCL = 47;
-const int I2C_SDA = 21;
+const int I2C_SCL = I2C_SCL_ESP;
+const int I2C_SDA = I2C_SDA_ESP;
 #endif
 
 #ifdef DEVICE_2_ENABLED
 #define DEVICE_ID 2
-const int I2C_SCL = 47;
-const int I2C_SDA = 21;
+const int I2C_SCL = I2C_SCL_ESPS3;
+const int I2C_SDA = I2C_SDA_ESPS3;
 #endif
 
 #ifdef DEVICE_3_ENABLED
 #define DEVICE_ID 3
-const int I2C_SCL = 22;//20;//22;
-const int I2C_SDA = 21;//19;//21;
+const int I2C_SCL = I2C_SCL_ESP;//20;//22;
+const int I2C_SDA = I2C_SDA_ESP;//19;//21;
 #endif
 
 #ifdef DEVICE_4_ENABLED
 #define DEVICE_ID 4
-const int I2C_SCL = 47;
-const int I2C_SDA = 21;
+const int I2C_SCL = I2C_SCL_ESPS3;
+const int I2C_SDA = I2C_SDA_ESPS3;
 #endif
 
 #ifdef DEVICE_5_ENABLED
 #define DEVICE_ID 5
-const int I2C_SCL = 47;
-const int I2C_SDA = 21;
+const int I2C_SCL = I2C_SCL_ESP;
+const int I2C_SDA = I2C_SDA_ESP;
 #endif
 
 
@@ -60,23 +62,23 @@ XboxGamepadDevice *gamepad;
 bool buttonJoystickLeftDownPressed = false;
 
 #ifdef DEVICE_1_ENABLED
-BleCompositeHID compositeHID("P1h", "P1h", 30);
+BleCompositeHID compositeHID("P1i", "P1i", 30);
 #endif
 
 #ifdef DEVICE_2_ENABLED
-BleCompositeHID compositeHID("P2h", "P2h", 30);
+BleCompositeHID compositeHID("P2i", "P2i", 30);
 #endif
 
 #ifdef DEVICE_3_ENABLED
-BleCompositeHID compositeHID("P3h", "P3h", 30);
+BleCompositeHID compositeHID("P3i", "P3i", 30);
 #endif
 
 #ifdef DEVICE_4_ENABLED
-BleCompositeHID compositeHID("P4h", "P4h", 30);
+BleCompositeHID compositeHID("P4i", "P4i", 30);
 #endif
 
 #ifdef DEVICE_5_ENABLED
-BleCompositeHID compositeHID("P5h", "P5h", 30);
+BleCompositeHID compositeHID("P5i", "P5i", 30);
 #endif
 
 
@@ -639,17 +641,25 @@ void loop() {
     joystickP2Button.pressButton(sendData.joystickButtons[1].direction, true, false);
     joystickP2Button.pressButton(messageIncomeP4.joystickButtons[1].direction, false, false);
 
-    delay(5);    
-
-    //SEND TO OTHERS
-    //DEVICE 3
-    setGamepadData(sendData, messageIncomeP4, 3);
-    sendDataToListenersOnly(SLAVE_ADDRESS_P3);
+    delay(2);    
 
     //SEND TO OTHERS
     //DEVICE 1
-    //setGamepadData(sendData, messageIncomeP4, 3);
-    //sendDataToListenersOnly(SLAVE_ADDRESS_P3);
+    setGamepadData(sendData, messageIncomeP4, 1);
+    sendDataToListenersOnly(SLAVE_ADDRESS_P1);
+    delay(2);
+
+
+    //DEVICE 3
+    setGamepadData(sendData, messageIncomeP4, 3);
+    sendDataToListenersOnly(SLAVE_ADDRESS_P3);
+    delay(2);
+
+    //DEVICE 5
+    setGamepadData(sendData, messageIncomeP4, 5);
+    sendDataToListenersOnly(SLAVE_ADDRESS_P5);
+    delay(2);
+
 
  }else if(DEVICE_ID == 4){
     setSendDataOfSensors(DEVICE_ID == 4);   

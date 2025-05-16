@@ -14,8 +14,8 @@ const int I2C_SCL_ESPS3 = 47;
 //#define DEVICE_1_ENABLED   // 4 port esp32
 //#define DEVICE_2_ENABLED // 16 Port 
 //#define DEVICE_3_ENABLED // 4 port esp32
-//#define DEVICE_4_ENABLED // 18 Port
-#define DEVICE_5_ENABLED // 4 port esp32
+#define DEVICE_4_ENABLED // 18 Port
+//#define DEVICE_5_ENABLED // 4 port esp32
 
 #ifdef DEVICE_1_ENABLED 
 #define DEVICE_ID 1
@@ -89,30 +89,70 @@ int pressDownPinPlayer3 = 40;
 int pressDownPinPlayer4 = 39;
 int pressDownPinPlayer5 = 38;
 
-
 #ifdef DEVICE_2_ENABLED
-boolean inverseYJoystickDirections = false;
-boolean inverseYJoystickCheaperDirections = false;
-boolean inverseXJoystickButtons = false;
+boolean xInverseJoystickDirectionFinger1 = true;
+boolean yInverseJoystickDirectionFinger1 = false;
+boolean xInverseJoystickDirectionFinger2 = true;
+boolean yInverseJoystickDirectionFinger2 = false;
+boolean xInverseJoystickDirectionFinger3 = true;
+boolean yInverseJoystickDirectionFinger3 = false;
+boolean xInverseJoystickDirectionFinger4 = true;
+boolean yInverseJoystickDirectionFinger4 = false;
+boolean xInverseJoystickDirectionFinger5 = true;
+boolean yInverseJoystickDirectionFinger5 = false;
+
+boolean xInverseJoystickButtonFinger1 = false;
+boolean yInverseJoystickButtonFinger1 = false;
+boolean xInverseJoystickButtonFinger2 = false;
+boolean yInverseJoystickButtonFinger2 = false;
+boolean xInverseJoystickButtonFinger3 = false;
+boolean yInverseJoystickButtonFinger3 = false;
+boolean xInverseJoystickButtonFinger4 = false;
+boolean yInverseJoystickButtonFinger4 = false;
+boolean xInverseJoystickButtonFinger5 = false;
+boolean yInverseJoystickButtonFinger5 = true;
+
 #else
-boolean inverseYJoystickDirections = true;
-boolean inverseYJoystickCheaperDirections = false;
-boolean inverseXJoystickButtons = true;
+
+boolean xInverseJoystickDirectionFinger1 = true;
+boolean yInverseJoystickDirectionFinger1 = false;
+boolean xInverseJoystickDirectionFinger2 = true;
+boolean yInverseJoystickDirectionFinger2 = true;//false;
+boolean xInverseJoystickDirectionFinger3 = true;
+boolean yInverseJoystickDirectionFinger3 = true;//false;
+boolean xInverseJoystickDirectionFinger4 = true;
+boolean yInverseJoystickDirectionFinger4 = true;//false;
+boolean xInverseJoystickDirectionFinger5 = true;
+boolean yInverseJoystickDirectionFinger5 = false;
+
+boolean xInverseJoystickButtonFinger1 = true;
+boolean yInverseJoystickButtonFinger1 = false;//false;
+boolean xInverseJoystickButtonFinger2 = false;
+boolean yInverseJoystickButtonFinger2 = false;
+boolean xInverseJoystickButtonFinger3 = false;
+boolean yInverseJoystickButtonFinger3 = false;
+boolean xInverseJoystickButtonFinger4 = false;
+boolean yInverseJoystickButtonFinger4 = false;
+boolean xInverseJoystickButtonFinger5 = true;//false;
+boolean yInverseJoystickButtonFinger5 = false;//true;
+
 #endif
 
-//Joysticks Buttons
-JoystickButton joystickP1Button = JoystickButton(  4,   5, false, false, 0);
-JoystickButton joystickP2Button = JoystickButton( 15,  16, false, false, 0);
-JoystickButton joystickP3Button = JoystickButton(  8,   3, false, false, 0);
-JoystickButton joystickP4Button = JoystickButton( 11,  12, false, false, 0);
-JoystickButton joystickP5Button = JoystickButton(  1,   2, inverseXJoystickButtons, false, 0);
-
   //Directions
-JoystickSensor joystickP1Direction = JoystickSensor( 6,   7, true, inverseYJoystickCheaperDirections);
-JoystickSensor joystickP2Direction = JoystickSensor(17,  18, true, inverseYJoystickDirections);
-JoystickSensor joystickP3Direction = JoystickSensor( 9,  10, true, inverseYJoystickDirections);
-JoystickSensor joystickP4Direction = JoystickSensor( 13, 14, true, inverseYJoystickDirections);
-JoystickSensor joystickP5Direction = JoystickSensor( 20, 19, true, inverseYJoystickCheaperDirections);
+JoystickSensor joystickP1Direction = JoystickSensor( 6,   7, xInverseJoystickDirectionFinger1, yInverseJoystickDirectionFinger1);
+JoystickSensor joystickP2Direction = JoystickSensor(17,  18, xInverseJoystickDirectionFinger2, yInverseJoystickDirectionFinger2);
+JoystickSensor joystickP3Direction = JoystickSensor( 9,  10, xInverseJoystickDirectionFinger3, yInverseJoystickDirectionFinger3);
+JoystickSensor joystickP4Direction = JoystickSensor( 13, 14, xInverseJoystickDirectionFinger4, yInverseJoystickDirectionFinger4);
+JoystickSensor joystickP5Direction = JoystickSensor( 20, 19, xInverseJoystickDirectionFinger5, yInverseJoystickDirectionFinger5);
+
+  //Joysticks Buttons
+JoystickButton joystickP1Button = JoystickButton(  4,   5, xInverseJoystickButtonFinger1, yInverseJoystickButtonFinger1, 0);
+JoystickButton joystickP2Button = JoystickButton( 15,  16, xInverseJoystickButtonFinger2, yInverseJoystickButtonFinger2, 0);
+JoystickButton joystickP3Button = JoystickButton(  8,   3, xInverseJoystickButtonFinger3, yInverseJoystickButtonFinger3, 0);
+JoystickButton joystickP4Button = JoystickButton( 11,  12, xInverseJoystickButtonFinger4, yInverseJoystickButtonFinger4, 0);
+JoystickButton joystickP5Button = JoystickButton(  1,   2, xInverseJoystickButtonFinger5, yInverseJoystickButtonFinger5, 0);
+
+
 
 #pragma pack(1)
 typedef struct sctruct_gamepad {
@@ -537,8 +577,12 @@ void setSendDataOfSensors(boolean isLeftSide){
   if(DEVICE_ID == 2){
     isPressDown3 = !isPressDown3;
   }
-  //Serial.print("x3: ");
-  //Serial.println(x3);
+  /*
+  Serial.print("x3: ");
+  Serial.print(x3);
+  Serial.print(" ,direccion: ");
+  Serial.println(direction3);
+  */
 
   sendData.joystickButtons[2].idPlayer = 3;
   sendData.joystickButtons[2].isLeftSide  = isLeftSide;

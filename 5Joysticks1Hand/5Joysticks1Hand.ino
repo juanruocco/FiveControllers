@@ -12,9 +12,9 @@ const int I2C_SDA_ESPS3 = 21;
 const int I2C_SCL_ESPS3 = 47;
 
 //#define DEVICE_1_ENABLED   // 4 port esp32
-//#define DEVICE_2_ENABLED // 16 Port 
+#define DEVICE_2_ENABLED // 16 Port 
 //#define DEVICE_3_ENABLED // 4 port esp32
-#define DEVICE_4_ENABLED // 18 Port
+//#define DEVICE_4_ENABLED // 18 Port
 //#define DEVICE_5_ENABLED // 4 port esp32
 
 #ifdef DEVICE_1_ENABLED 
@@ -60,6 +60,7 @@ int lastTimeCheckMillis = 0;
 XboxGamepadDevice *gamepad;
 
 bool buttonJoystickLeftDownPressed = false;
+bool buttonJoystickRigthDownPressed = false;
 
 #ifdef DEVICE_1_ENABLED
 BleCompositeHID compositeHID("P1i", "P1i", 30);
@@ -663,6 +664,25 @@ void testReleaseButtonDown(){
   }
 }
 
+void testPressButtonRigthDown(){
+  if (buttonJoystickRigthDownPressed == false) {
+    buttonJoystickRigthDownPressed = true;
+    //gamepad->press(gamepadButtons[0][8]);
+    gamepad-> setRightTrigger(30000);
+    gamepad->sendGamepadReport();
+  } 
+}
+
+void testReleaseButtonRigthDown(){
+  if (buttonJoystickRigthDownPressed == true) {
+    //gamepad->release(gamepadButtons[0][7]);
+    gamepad-> setRightTrigger(0);
+    gamepad->sendGamepadReport();
+    buttonJoystickRigthDownPressed = false;
+  }
+}
+
+
 
 void loop() {
 
@@ -680,7 +700,13 @@ void loop() {
       testPressButtonDown();
     }else{
       testReleaseButtonDown();
-    } 
+    }
+
+    if(messageIncomeP4.joystickButtons[1].isPressDown){
+      testPressButtonRigthDown();
+    }else{
+      testReleaseButtonRigthDown();
+    }  
 
     joystickP2Button.pressButton(sendData.joystickButtons[1].direction, true, false);
     joystickP2Button.pressButton(messageIncomeP4.joystickButtons[1].direction, false, false);

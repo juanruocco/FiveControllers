@@ -9,8 +9,8 @@
 
   //#define DEVICE_1_ENABLED   // 4 port esp32
   //#define DEVICE_2_ENABLED // 16 Port 
-  #define DEVICE_3_ENABLED // 4 port esp32
-  //#define DEVICE_4_ENABLED // 18 Port
+  //#define DEVICE_3_ENABLED // 4 port esp32
+  #define DEVICE_4_ENABLED // 18 Port
   //#define DEVICE_5_ENABLED // 4 port esp32
 
   #define SLAVE_ADDRESS_P1 0x08
@@ -48,7 +48,12 @@
   const int I2C_SDA = I2C_SDA_ESP;
   #endif
 
-
+  //JOYSTICK VARIABLES
+  const int pressDownPinPlayer1 = 42;
+  const int pressDownPinPlayer2 = 41;
+  const int pressDownPinPlayer3 = 40;
+  const int pressDownPinPlayer4 = 39;
+  const int pressDownPinPlayer5 = 38;
 
 #endif
 

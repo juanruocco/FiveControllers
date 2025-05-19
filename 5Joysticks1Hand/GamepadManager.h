@@ -2,6 +2,7 @@
 #define __GAMEPADMANAGER_H__
 
 #include <Arduino.h>
+
 #include <BleCompositeHID.h>
 #include <XboxGamepadDevice.h>
 

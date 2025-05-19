@@ -16,8 +16,8 @@ const int I2C_SCL_ESPS3 = 47;
 
 //#define DEVICE_1_ENABLED   // 4 port esp32
 //#define DEVICE_2_ENABLED // 16 Port 
-//#define DEVICE_3_ENABLED // 4 port esp32
-#define DEVICE_4_ENABLED // 18 Port
+#define DEVICE_3_ENABLED // 4 port esp32
+//#define DEVICE_4_ENABLED // 18 Port
 //#define DEVICE_5_ENABLED // 4 port esp32
 
 #ifdef DEVICE_1_ENABLED 
@@ -304,7 +304,10 @@ void setup() {
   //joystickP4Button.init(gamepad);
   //joystickP5Button.init(gamepad);
 
-  multipleButton.init(gamepad);
+  if(DEVICE_ID == 4){
+    multipleButton.init(gamepad);
+  }
+  
   gamepadManager.init(gamepad);
 
   receiveData = {};
@@ -395,22 +398,6 @@ void OnVibrateEvent(XboxGamepadOutputReportData data)
 }
 
 
-void joystickDirectionDetect(){
-  if(compositeHID.isConnected()){
-    joystickP2Direction.detectAndPress(true, true);
-  }
-  delay(1);
-}
-
-/*
-void joysticksButtonsDetect(){
-  if(compositeHID.isConnected()){
-    joystickP2Button.detectAndPress(true);
-  }
-  delay(1);
-}
-*/
-
 // Funcion que se llama automaticamente cuando el maestro ENVIA datos a ESTE esclavo
 void receiveEvent(int howMany) {
   // ¡NO HAGAS OPERACIONES LARGAS NI SERIAL.PRINT AQUI!
@@ -457,38 +444,38 @@ void requestEvent() {
 }
 
 struct_message requestMessageSlave(int address){
-    // --- Enviar el dato al Esclavo 1 ---
-    //Serial.printf("\nMaestro: Enviando struct (%zu bytes) al Esclavo 1 (0x%02X)...\n", sizeof(sendData), address);
-    Wire.beginTransmission(address);
-    // !!! Envía la estructura completa como un bloque de bytes !!!
-    size_t bytesSent = Wire.write((uint8_t*)&sendData, sizeof(sendData));
-    byte end_transmission_status = Wire.endTransmission();
+  // --- Enviar el dato al Esclavo 1 ---
+  //Serial.printf("\nMaestro: Enviando struct (%zu bytes) al Esclavo 1 (0x%02X)...\n", sizeof(sendData), address);
+  Wire.beginTransmission(address);
+  // !!! Envía la estructura completa como un bloque de bytes !!!
+  size_t bytesSent = Wire.write((uint8_t*)&sendData, sizeof(sendData));
+  byte end_transmission_status = Wire.endTransmission();
 
-    //Serial.printf("Maestro: Se intentaron enviar %zu bytes. Resultado: %d\n", bytesSent, end_transmission_status);
-    if (end_transmission_status == 0 && bytesSent == sizeof(sendData)) {
-      //Serial.println("Maestro: Envio a Esclavo 1 exitoso.");
-    } else {
-      Serial.printf("Maestro: Error/Envio parcial a Esclavo 1. Codigo: %d\n", end_transmission_status);
-    }
-    delay(20);
+  //Serial.printf("Maestro: Se intentaron enviar %zu bytes. Resultado: %d\n", bytesSent, end_transmission_status);
+  if (end_transmission_status == 0 && bytesSent == sizeof(sendData)) {
+    //Serial.println("Maestro: Envio a Esclavo 1 exitoso.");
+  } else {
+    Serial.printf("Maestro: Error/Envio parcial a Esclavo 1. Codigo: %d\n", end_transmission_status);
+  }
+  delay(20);
 
-    // --- Solicitar la estructura completa del Esclavo 1 ---
-    //Serial.printf("Maestro: Solicitando struct (%zu bytes) del Esclavo 1...\n", sizeof(struct_message));
-    struct_message receivedMessageS1; // Variable para recibir la estructura
-    size_t bytes_requested = sizeof(struct_message);
-    size_t bytes_received = Wire.requestFrom(address, bytes_requested); // Solicitar el tamaño completo
-    //Serial.printf("Maestro: Se solicitaron %zu bytes, se recibieron %zu\n", bytes_requested, bytes_received);
+  // --- Solicitar la estructura completa del Esclavo 1 ---
+  //Serial.printf("Maestro: Solicitando struct (%zu bytes) del Esclavo 1...\n", sizeof(struct_message));
+  struct_message receivedMessageS1; // Variable para recibir la estructura
+  size_t bytes_requested = sizeof(struct_message);
+  size_t bytes_received = Wire.requestFrom(address, bytes_requested); // Solicitar el tamaño completo
+  //Serial.printf("Maestro: Se solicitaron %zu bytes, se recibieron %zu\n", bytes_requested, bytes_received);
 
-    if (bytes_received == bytes_requested) {
-      // !!! Leer los bytes recibidos directamente en la variable de la estructura !!!
-      Wire.readBytes((uint8_t*)&receivedMessageS1, bytes_received);
-      //Serial.println("Maestro: Struct recibida de Esclavo 1.");
-    } else {
-      Serial.println("Maestro: Error o recepcion parcial de Esclavo 1.");
-      // Leer y descartar el resto si Wire.available() > 0 para limpiar el buffer
-      while(Wire.available()) Wire.read();
-    }
-    return receivedMessageS1;
+  if (bytes_received == bytes_requested) {
+    // !!! Leer los bytes recibidos directamente en la variable de la estructura !!!
+    Wire.readBytes((uint8_t*)&receivedMessageS1, bytes_received);
+    //Serial.println("Maestro: Struct recibida de Esclavo 1.");
+  } else {
+    Serial.println("Maestro: Error o recepcion parcial de Esclavo 1.");
+    // Leer y descartar el resto si Wire.available() > 0 para limpiar el buffer
+    while(Wire.available()) Wire.read();
+  }
+  return receivedMessageS1;
     
 }
 
@@ -764,6 +751,7 @@ void loop() {
       
       //joystickP3Button.pressButton(gamepadData.directionLeft, true, false);  
       //joystickP3Button.pressButton(gamepadData.directionRigth, false, false);
+      
       gamepadManager.pressDirection(gamepadData.directionLeft, true, false); 
       gamepadManager.pressDirection(gamepadData.directionRigth, false, false);   
 
@@ -773,12 +761,19 @@ void loop() {
         testReleaseButtonLeftDown();
       }
 
+      if(gamepadData.isPressDownRigth){
+        testPressButtonRigthDown();
+      }else{
+        testReleaseButtonRigthDown();
+      }
+
       
       //countMessage++;
       //sendData.num_message = countMessage; 
     }
     // El loop puede hacer otras tareas
     delay(4);
+    
  }
 
 }

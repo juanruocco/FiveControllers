@@ -40,53 +40,53 @@ void MultipleButton::detectDirectionAndCenterButtons(){
         if(buttonPressed[out][0]){
           direction[out] = 1;
         }
-        if(buttonPressed[out][0]  && buttonPressed[out][1] ){
-          direction[out] = 2;
-        }
+        //if(buttonPressed[out][0]  && buttonPressed[out][1] ){
+        //  direction[out] = 2;
+        //}
         if(buttonPressed[out][1] ){
           direction[out] = 3;
         }
-        if(buttonPressed[out][1]  && buttonPressed[out][2] ){
-          direction[out] = 4;
-        }
+        //if(buttonPressed[out][1]  && buttonPressed[out][2] ){
+        //  direction[out] = 4;
+        //}
         if(buttonPressed[out][2] ){
           direction[out] = 5;
         }
-        if(buttonPressed[out][2] && buttonPressed[out][3] ){
-          direction[out] = 6;
-        }
+        //if(buttonPressed[out][2] && buttonPressed[out][3] ){
+        //  direction[out] = 6;
+        //}
         if(buttonPressed[out][3] ){
           direction[out] = 7;
         }
-        if(buttonPressed[out][3] && buttonPressed[out][0]){
-          direction[out] = 8;
-        }
+        //if(buttonPressed[out][3] && buttonPressed[out][0]){
+        //  direction[out] = 8;
+        //}
 
     }else{
         if(buttonPressed[out][0]){
           direction[out] = 5;
         }
-        if(buttonPressed[out][0]  && buttonPressed[out][1] ){
-          direction[out] = 6;
-        }
+        //if(buttonPressed[out][0]  && buttonPressed[out][1] ){
+        //  direction[out] = 6;
+        //}
         if(buttonPressed[out][1] ){
           direction[out] = 7;
         }
-        if(buttonPressed[out][1]  && buttonPressed[out][2] ){
-          direction[out] = 8;
-        }
+        //if(buttonPressed[out][1]  && buttonPressed[out][2] ){
+        //  direction[out] = 8;
+        //}
         if(buttonPressed[out][2] ){
           direction[out] = 1;
         }
-        if(buttonPressed[out][2] && buttonPressed[out][3] ){
-          direction[out] = 2;
-        }
+        //if(buttonPressed[out][2] && buttonPressed[out][3] ){
+        //  direction[out] = 2;
+        //}
         if(buttonPressed[out][3] ){
           direction[out] = 3;
         }
-        if(buttonPressed[out][3] && buttonPressed[out][0]){
-          direction[out] = 4;
-        }
+        //if(buttonPressed[out][3] && buttonPressed[out][0]){
+        //  direction[out] = 4;
+        //}
 
         
     }

@@ -63,6 +63,7 @@ int lastTimeCheckMillis = 0;
 XboxGamepadDevice *gamepad;
 
 bool buttonJoystickLeftDownPressed = false;
+bool buttonJoystickRigthDownPressed = false;
 
 #ifdef DEVICE_1_ENABLED
 BleCompositeHID compositeHID("P1i", "P1i", 30);
@@ -206,8 +207,6 @@ void printMessage(struct_message data){
     Serial.print(data.joystickButtons[i].isLeftSide);
     Serial.print("\t,isPressUp: ");
     Serial.print(data.joystickButtons[i].isPressUp);
-    Serial.print("\t,isPressDown: ");
-    Serial.print(data.joystickButtons[i].isPressDown);
     */
   }
 
@@ -635,7 +634,7 @@ void setGamepadData(struct_message messageIncomeP2, struct_message messageIncome
 
 }
 
-void testPressButtonDown(){
+void testPressButtonLeftDown(){
   if (buttonJoystickLeftDownPressed == false) {
     buttonJoystickLeftDownPressed = true;
     //gamepad->press(gamepadButtons[0][8]);
@@ -644,7 +643,7 @@ void testPressButtonDown(){
   } 
 }
 
-void testReleaseButtonDown(){
+void testReleaseButtonLeftDown(){
   if (buttonJoystickLeftDownPressed == true) {
     //gamepad->release(gamepadButtons[0][7]);
     gamepad-> setLeftTrigger(0);
@@ -654,11 +653,31 @@ void testReleaseButtonDown(){
 }
 
 
+void testPressButtonRigthDown(){
+  if (buttonJoystickRigthDownPressed == false) {
+    buttonJoystickRigthDownPressed = true;
+    //gamepad->press(gamepadButtons[0][8]);
+    gamepad-> setRightTrigger(30000);
+    gamepad->sendGamepadReport();
+  } 
+}
+
+void testReleaseButtonRigthDown(){
+  if (buttonJoystickRigthDownPressed == true) {
+    //gamepad->release(gamepadButtons[0][7]);
+    gamepad-> setRightTrigger(0);
+    gamepad->sendGamepadReport();
+    buttonJoystickRigthDownPressed = false;
+  }
+}
+
+
 void loop() {
 
  if(DEVICE_ID == 2){
     
     setSendDataOfSensors(DEVICE_ID == 2);
+    //printMessage(sendData);
 
     //RECEIVE THE REST OF INFO OF SENSORS AND SEND TO P$
     struct_message messageIncomeP4 = requestMessageSlave(SLAVE_ADDRESS_P4);
@@ -667,10 +686,10 @@ void loop() {
     joystickP2Direction.justPress(sendData.joystickButtons[1].posX, sendData.joystickButtons[1].posY, true);
     joystickP2Direction.justPress(messageIncomeP4.joystickButtons[1].posX, messageIncomeP4.joystickButtons[1].posY, false);
     if(sendData.joystickButtons[1].isPressDown){
-      testPressButtonDown();
+      testPressButtonLeftDown();
     }else{
-      testReleaseButtonDown();
-    } 
+      testReleaseButtonLeftDown();
+    }
 
     //multipleButton
     gamepadManager.pressDirection(sendData.joystickButtons[1].direction, true, false);
@@ -700,7 +719,7 @@ void loop() {
 
 
  }else if(DEVICE_ID == 4){
-    setSendDataOfSensors(DEVICE_ID == 4);   
+    setSendDataOfSensors(DEVICE_ID == 2);   
     //printMessage(sendData);
 
     joystickP4Direction.justPress(sendData.joystickButtons[3].posX, sendData.joystickButtons[3].posY, false);
@@ -720,9 +739,15 @@ void loop() {
       //sendData.num_message = countMessage; 
 
       if(receiveData.joystickButtons[3].isPressDown){
-        testPressButtonDown();
+        testPressButtonLeftDown();
       }else{
-        testReleaseButtonDown();
+        testReleaseButtonLeftDown();
+      }
+
+      if(sendData.joystickButtons[3].isPressDown){
+        testPressButtonRigthDown();
+      }else{
+        testReleaseButtonRigthDown();
       }
 
     }
@@ -743,10 +768,12 @@ void loop() {
       gamepadManager.pressDirection(gamepadData.directionRigth, false, false);   
 
       if(gamepadData.isPressDownLeft){
-        testPressButtonDown();
+        testPressButtonLeftDown();
       }else{
-        testReleaseButtonDown();
+        testReleaseButtonLeftDown();
       }
+
+      
       //countMessage++;
       //sendData.num_message = countMessage; 
     }

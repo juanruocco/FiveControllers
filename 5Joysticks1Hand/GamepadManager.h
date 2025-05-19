@@ -12,10 +12,10 @@ const int EAST_DIRE = 138;
 const int TRIGER_LEFT  = 141;
 const int TRIGER_RIGHT = 142;
 
-const uint16_t gamepadButtonsJoystick[2][10] =   { 
+const uint16_t gamepadButtonsJoystick[2][10] =   {                  //mapa                                  //Montar                          //pa la izqu                      //No impor, nose
                                               { 0 ,NORTH_DIRE      ,XBOX_BUTTON_SELECT   ,EAST_DIRE        ,XBOX_BUTTON_LS   ,SOUTH_DIRE     ,XBOX_BUTTON_LB   ,WEST_DIRE       ,TRIGER_LEFT          , XBOX_BUTTON_HOME  },                                 
                                               { 0 ,XBOX_BUTTON_Y   ,TRIGER_RIGHT         ,XBOX_BUTTON_B    ,XBOX_BUTTON_RB  , XBOX_BUTTON_A  ,XBOX_BUTTON_RS   ,XBOX_BUTTON_X   ,XBOX_BUTTON_START    , XBOX_BUTTON_SHARE }     
-                                          };
+                                          };                       //escojer opcion RT                                                                                          //inventario
 
 typedef void (*CallbackFunctionWithArg)(int direction, boolean isPressed);
 

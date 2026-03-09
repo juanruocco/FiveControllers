@@ -19,7 +19,7 @@ const  int thresholdMedium = 7000; //31327, 15000 // limit for lateral  buttons
 const  int thresholdMin    = 1000; // 1000limit for horizonal vertical buttons
 
 const uint16_t gamepadButtonsJoystick[2][10] =   { 
-                                              { 0 ,NORTH_DIRE      ,XBOX_BUTTON_SELECT   ,EAST_DIRE        ,XBOX_BUTTON_LS   ,SOUTH_DIRE     ,XBOX_BUTTON_LB   ,WEST_DIRE       ,TRIGER_LEFT          , XBOX_BUTTON_HOME  },                                 
+                                              { 0 ,NORTH_DIRE      ,XBOX_BUTTON_SELECT   ,EAST_DIRE        ,XBOX_BUTTON_LS   ,SOUTH_DIRE     ,XBOX_BUTTON_LB   ,WEST_DIRE       ,XBOX_BUTTON_SHARE          , XBOX_BUTTON_HOME  },                                 
                                               { 0 ,XBOX_BUTTON_Y   ,TRIGER_RIGHT         ,XBOX_BUTTON_B    ,XBOX_BUTTON_RB  , XBOX_BUTTON_A  ,XBOX_BUTTON_RS   ,XBOX_BUTTON_X   ,XBOX_BUTTON_START    , XBOX_BUTTON_SHARE }     
                                           };
 

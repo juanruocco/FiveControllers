@@ -12,9 +12,9 @@ const int I2C_SDA_ESPS3 = 21;
 const int I2C_SCL_ESPS3 = 47;
 
 //#define DEVICE_1_ENABLED   // 4 port esp32
-#define DEVICE_2_ENABLED // 16 Port 
+//#define DEVICE_2_ENABLED // 16 Port 
 //#define DEVICE_3_ENABLED // 4 port esp32
-//#define DEVICE_4_ENABLED // 18 Port
+#define DEVICE_4_ENABLED // 18 Port
 //#define DEVICE_5_ENABLED // 4 port esp32
 
 #ifdef DEVICE_1_ENABLED 
@@ -429,7 +429,7 @@ void joysticksButtonsDetect(){
 // Funcion que se llama automaticamente cuando el maestro ENVIA datos a ESTE esclavo
 void receiveEvent(int howMany) {
   // ¡NO HAGAS OPERACIONES LARGAS NI SERIAL.PRINT AQUI!
-
+  //Serial.printf("Esclavo: Se recibio Tamano de datos recibido: %d bytes (Esperado: %zu)\n", howMany, sizeof(struct_message));
   // Verificar si el tamaño de los datos recibidos coincide con el tamaño esperado de la estructura
   if (howMany == sizeof(struct_message)) {
     // !!! Leer los bytes recibidos directamente en la variable de la estructura !!!
@@ -452,7 +452,7 @@ void receiveEventOnlyListeners(int howMany) {
     Wire.readBytes((uint8_t*)&gamepadData, howMany);
     newDataReceived = true; 
   } else {
-    Serial.printf("Esclavo 1: Tamano de datos recibido inesperado: %d bytes (Esperado: %zu)\n", howMany, sizeof(sctruct_gamepad));
+    Serial.printf("Esclavos 1,3,5: Tamano de datos recibido inesperado: %d bytes (Esperado: %zu)\n", howMany, sizeof(sctruct_gamepad));
     while (Wire.available()) {
       Wire.read();
     }
@@ -483,7 +483,7 @@ struct_message requestMessageSlave(int address){
     if (end_transmission_status == 0 && bytesSent == sizeof(sendData)) {
       //Serial.println("Maestro: Envio a Esclavo 1 exitoso.");
     } else {
-      Serial.printf("Maestro: Error/Envio parcial a Esclavo 1. Codigo: %d\n", end_transmission_status);
+      Serial.printf("Maestro: Error/Envio parcial a Esclavo 2: %d, Codigo: %d, Tamano: %d\n", address , end_transmission_status, sizeof(sendData));
     }
     delay(20);
 
@@ -519,7 +519,7 @@ void sendDataToListenersOnly(int address){
     if (end_transmission_status == 0 && bytesSent == sizeof(gamepadData)) {
       //Serial.println("Maestro: Envio a Esclavo 1 exitoso.");
     } else {
-      Serial.printf("Maestro: Error/Envio parcial a Esclavo 1. Codigo: %d\n", end_transmission_status);
+      Serial.printf("Maestro: Error/Envio parcial a Esclavo :%d. Codigo: %d, Tamano: %d\n", address  , end_transmission_status, sizeof(sendData));
     }
     delay(2);
    

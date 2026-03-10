@@ -12,8 +12,8 @@ const int I2C_SDA_ESPS3 = 21;
 const int I2C_SCL_ESPS3 = 47;
 
 //#define DEVICE_1_ENABLED   // 4 port esp32
-#define DEVICE_2_ENABLED // 16 Port 
-//#define DEVICE_3_ENABLED // 4 port esp32
+//#define DEVICE_2_ENABLED // 16 Port 
+#define DEVICE_3_ENABLED // 4 port esp32
 //#define DEVICE_4_ENABLED // 18 Port
 //#define DEVICE_5_ENABLED // 4 port esp32
 

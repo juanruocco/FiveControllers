@@ -774,6 +774,12 @@ void loop() {
       }else{
         testReleaseButtonDown();
       }
+
+      if(gamepadData.isPressDownRigth){
+        testPressButtonRigthDown();
+      }else{
+        testReleaseButtonRigthDown();
+      } 
       //countMessage++;
       //sendData.num_message = countMessage; 
     }

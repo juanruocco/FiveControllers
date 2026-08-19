@@ -1,6 +1,9 @@
 #ifndef __GLOBALVARS_H__
 #define __GLOBALVARS_H__
 
+  //#define DEBUG_MODE
+  #ifdef DEBUG_MODE
+  #endif
 
   const int I2C_SDA_ESP = 21;
   const int I2C_SCL_ESP = 22;
@@ -29,6 +32,8 @@
   const int I2C_SCL = I2C_SCL_ESPS3;
   const int I2C_SDA = I2C_SDA_ESPS3;
   #endif
+
+  
 
   #ifdef DEVICE_3_ENABLED
   #define DEVICE_ID 3

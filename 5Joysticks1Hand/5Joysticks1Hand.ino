@@ -253,8 +253,9 @@ void loop() {
     struct_message sendData = comI2CManager.sendData;
     //RECEIVE THE REST OF INFO OF SENSORS AND SEND TO P$
     struct_message messageIncomeP4 = comI2CManager.requestMessageSlave(SLAVE_ADDRESS_P4);
+    #ifdef DEBUG_MODE
     comI2CManager.printMessage(messageIncomeP4);
-
+    #endif
     joystickP2Direction.justPress(sendData.joystickButtons[1].posX, sendData.joystickButtons[1].posY, true);
     joystickP2Direction.justPress(messageIncomeP4.joystickButtons[1].posX, messageIncomeP4.joystickButtons[1].posY, false);
     if(sendData.joystickButtons[1].isPressDown){
@@ -303,8 +304,9 @@ void loop() {
 
       comI2CManager.newDataReceived = false;
       struct_message receiveData = comI2CManager.receiveData;
+      #ifdef DEBUG_MODE
       comI2CManager.printMessage(receiveData);
-
+      #endif
       joystickP4Direction.justPress(receiveData.joystickButtons[3].posX, receiveData.joystickButtons[3].posY, true);
       //joystickP4Button.pressButton(receiveData.joystickButtons[3].direction, true, false);
       gamepadManager.pressDirection(receiveData.joystickButtons[3].direction, true, false);
